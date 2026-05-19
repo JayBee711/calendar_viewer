@@ -18,6 +18,7 @@
             --text-muted: #8e8e93;
             --accent: #0a84ff;
             --border: #2c2c2e;
+            --segment-bg: #111112;
         }
 
         body {
@@ -33,8 +34,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 20px 0;
-            border-bottom: 1px solid var(--border);
+            padding: 20px 0 10px 0;
         }
 
         h1 { margin: 0; font-size: 1.8rem; font-weight: 700; }
@@ -47,6 +47,37 @@
             font-weight: 600;
             cursor: pointer;
             padding: 8px 0;
+        }
+
+        /* Segmented Control for View Selection */
+        .segmented-control {
+            display: flex;
+            background-color: var(--segment-bg);
+            border: 1px solid var(--border);
+            border-radius: 9px;
+            padding: 2px;
+            margin-bottom: 20px;
+        }
+
+        .segment-btn {
+            flex: 1;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            padding: 8px 0;
+            font-size: 0.9rem;
+            font-weight: 500;
+            border-radius: 7px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .segment-btn.active {
+            background-color: var(--card-bg);
+            color: var(--text-main);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+            font-weight: 600;
         }
 
         .view-pane { display: block; }
@@ -87,9 +118,9 @@
             cursor: pointer;
         }
 
-        /* Agenda View Styling */
-        .agenda-container {
-            margin-top: 20px;
+        /* Agenda / Calendar Container */
+        .display-container {
+            margin-top: 10px;
         }
         .event-card {
             background-color: var(--card-bg);
@@ -108,7 +139,7 @@
             color: var(--text-muted);
             margin: 0;
         }
-        .no-events {
+        .info-msg {
             text-align: center;
             color: var(--text-muted);
             margin-top: 40px;
@@ -118,15 +149,22 @@
 </head>
 <body>
 
-    <!-- MAIN AGENDA VIEW -->
+    <!-- MAIN CALENDAR VIEW -->
     <div id="agenda-pane" class="view-pane">
         <header>
             <h1 id="current-date-title">Schedule</h1>
             <button class="icon-btn" onclick="toggleView('settings-pane')">Settings</button>
         </header>
+
+        <!-- Display Mode Selector -->
+        <div class="segmented-control">
+            <button id="btn-month" class="segment-btn" onclick="setDisplayMode('month')">Month</button>
+            <button id="btn-week" class="segment-btn" onclick="setDisplayMode('week')">Week</button>
+            <button id="btn-day" class="segment-btn" class="segment-btn active" onclick="setDisplayMode('day')">Day</button>
+        </div>
         
-        <div class="agenda-container" id="agenda-list">
-            <p class="no-events">No calendars configured yet. Tap Settings to add your feed URLs.</p>
+        <div class="display-container" id="calendar-display">
+            <!-- Dynamic calendar content loads here -->
         </div>
     </div>
 
@@ -153,18 +191,32 @@
     </div>
 
     <script>
+        // Track the current display mode (defaulting to Day layout)
+        let currentMode = 'day';
+
         // Set dynamic date header
         const options = { weekday: 'long', month: 'short', day: 'numeric' };
         document.getElementById('current-date-title').innerText = new Date().toLocaleDateString('en-US', options);
 
-        // Toggle between standard views
+        // Toggle between standard views (Main Schedule vs Settings)
         function toggleView(paneId) {
             document.querySelectorAll('.view-pane').forEach(pane => pane.classList.add('hidden'));
             document.getElementById(paneId).classList.remove('hidden');
             
             if(paneId === 'agenda-pane') {
-                loadAndDisplayEvents();
+                updateCalendarUI();
             }
+        }
+
+        // Change the display mode (Month, Week, Day)
+        function setDisplayMode(mode) {
+            currentMode = mode;
+            
+            // Update active segment button styling
+            document.querySelectorAll('.segment-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`btn-${mode}`).classList.add('active');
+            
+            updateCalendarUI();
         }
 
         // Save feeds locally
@@ -179,41 +231,52 @@
             toggleView('agenda-pane');
         }
 
-        // Pre-populate input elements if data exists
+        // Pre-populate inputs if data exists
         document.getElementById('apple-url').value = localStorage.getItem('cal_apple_url') || '';
         document.getElementById('google-url').value = localStorage.getItem('cal_google_url') || '';
 
-        // Core logic to process feeds and list them
-        async function loadAndDisplayEvents() {
+        // Core UI router that switches rendering style based on selected mode
+        function updateCalendarUI() {
             const apple = localStorage.getItem('cal_apple_url');
             const google = localStorage.getItem('cal_google_url');
-            const listContainer = document.getElementById('agenda-list');
+            const displayContainer = document.getElementById('calendar-display');
 
             if (!apple && !google) {
-                listContainer.innerHTML = '<p class="no-events">No calendars configured yet. Tap Settings to add your feed URLs.</p>';
+                displayContainer.innerHTML = '<p class="info-msg">No calendars configured yet. Tap Settings to add your feed URLs.</p>';
                 return;
             }
 
-            listContainer.innerHTML = '<p class="no-events">Fetching calendar data stream securely...</p>';
-
-            // We will build the robust .ics feed text parser together next!
-            // For now, this placeholder handles the layout structure smoothly.
-            setTimeout(() => {
-                listContainer.innerHTML = `
-                    <div class="event-card" style="border-left-color: #34c759;">
-                        <p class="event-title">Architecture Framework Ready</p>
-                        <p class="event-time">All Day • Setup Success</p>
-                    </div>
+            // Framework placeholders demonstrating how the visual layout shifts dynamically
+            if (currentMode === 'day') {
+                displayContainer.innerHTML = `
                     <div class="event-card" style="border-left-color: #0a84ff;">
-                        <p class="event-title">Next Step: Parse Real Data</p>
-                        <p class="event-time">12:00 PM - 1:00 PM</p>
+                        <p class="event-title">Day Layout Active</p>
+                        <p class="event-time">9:00 AM - 10:30 AM</p>
                     </div>
                 `;
-            }, 800);
+            } else if (currentMode === 'week') {
+                displayContainer.innerHTML = `
+                    <div style="border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-bottom: 12px;">
+                        <span style="color: var(--accent); font-weight: 600;">Today</span>
+                    </div>
+                    <div class="event-card" style="border-left-color: #34c759;">
+                        <p class="event-title">Weekly Timeline Event</p>
+                        <p class="event-time">Wednesday • All Day</p>
+                    </div>
+                `;
+            } else if (currentMode === 'month') {
+                displayContainer.innerHTML = `
+                    <p class="info-msg" style="font-style: italic;">[Month Grid View Structure placeholder]</p>
+                    <div class="event-card" style="border-left-color: #ff9500;">
+                        <p class="event-title">Monthly Overview Mode</p>
+                        <p class="event-time">May 2026</p>
+                    </div>
+                `;
+            }
         }
 
-        // Run immediately on bootup
-        loadAndDisplayEvents();
+        // Set initial segment highlighting on load
+        setDisplayMode('day');
 
         // Register Service Worker
         if ('serviceWorker' in navigator) {
