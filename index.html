@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Custom Calendar Viewer</title>
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="My Cal">
+    <link rel="manifest" href="manifest.json">
+
+    <style>
+        :root {
+            --bg-color: #000000;
+            --card-bg: #1c1c1e;
+            --text-main: #ffffff;
+            --text-muted: #8e8e93;
+            --accent: #0a84ff;
+            --border: #2c2c2e;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: env(safe-area-inset-top) 16px env(safe-area-inset-bottom) 16px;
+            box-sizing: border-box;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        h1 { margin: 0; font-size: 1.8rem; font-weight: 700; }
+
+        .icon-btn {
+            background: none;
+            border: none;
+            color: var(--accent);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            padding: 8px 0;
+        }
+
+        .view-pane { display: block; }
+        .view-pane.hidden { display: none; }
+
+        /* Settings Panel Styling */
+        .input-group {
+            margin-top: 20px;
+        }
+        label {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        input[type="url"] {
+            width: 100%;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 1rem;
+            box-sizing: border-box;
+            margin-bottom: 15px;
+        }
+        .save-btn {
+            width: 100%;
+            background-color: var(--accent);
+            color: #fff;
+            border: none;
+            padding: 14px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        /* Agenda View Styling */
+        .agenda-container {
+            margin-top: 20px;
+        }
+        .event-card {
+            background-color: var(--card-bg);
+            border-left: 4px solid var(--accent);
+            padding: 14px;
+            border-radius: 0 12px 12px 0;
+            margin-bottom: 12px;
+        }
+        .event-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin: 0 0 4px 0;
+        }
+        .event-time {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin: 0;
+        }
+        .no-events {
+            text-align: center;
+            color: var(--text-muted);
+            margin-top: 40px;
+            font-size: 1rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- MAIN AGENDA VIEW -->
+    <div id="agenda-pane" class="view-pane">
+        <header>
+            <h1 id="current-date-title">Schedule</h1>
+            <button class="icon-btn" onclick="toggleView('settings-pane')">Settings</button>
+        </header>
+        
+        <div class="agenda-container" id="agenda-list">
+            <p class="no-events">No calendars configured yet. Tap Settings to add your feed URLs.</p>
+        </div>
+    </div>
+
+    <!-- SETTINGS VIEW (HIDDEN BY DEFAULT) -->
+    <div id="settings-pane" class="view-pane hidden">
+        <header>
+            <h1>Feed Setup</h1>
+            <button class="icon-btn" onclick="toggleView('agenda-pane')">Back</button>
+        </header>
+
+        <div class="input-group">
+            <p style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.4; margin-bottom: 25px;">
+                Your URLs are stored strictly on this device's local memory. They are never transmitted or uploaded anywhere else.
+            </p>
+            
+            <label for="apple-url">Apple/iCloud iCal URL</label>
+            <input type="url" id="apple-url" placeholder="https://pXX-caldav.icloud.com/published/...">
+
+            <label for="google-url">Google Calendar iCal URL</label>
+            <input type="url" id="google-url" placeholder="https://calendar.google.com/calendar/ical/...">
+
+            <button class="save-btn" onclick="saveFeeds()">Save & Refresh</button>
+        </div>
+    </div>
+
+    <script>
+        // Set dynamic date header
+        const options = { weekday: 'long', month: 'short', day: 'numeric' };
+        document.getElementById('current-date-title').innerText = new Date().toLocaleDateString('en-US', options);
+
+        // Toggle between standard views
+        function toggleView(paneId) {
+            document.querySelectorAll('.view-pane').forEach(pane => pane.classList.add('hidden'));
+            document.getElementById(paneId).classList.remove('hidden');
+            
+            if(paneId === 'agenda-pane') {
+                loadAndDisplayEvents();
+            }
+        }
+
+        // Save feeds locally
+        function saveFeeds() {
+            const appleUrl = document.getElementById('apple-url').value.trim();
+            const googleUrl = document.getElementById('google-url').value.trim();
+
+            localStorage.setItem('cal_apple_url', appleUrl);
+            localStorage.setItem('cal_google_url', googleUrl);
+
+            alert('Feeds saved securely to your device!');
+            toggleView('agenda-pane');
+        }
+
+        // Pre-populate input elements if data exists
+        document.getElementById('apple-url').value = localStorage.getItem('cal_apple_url') || '';
+        document.getElementById('google-url').value = localStorage.getItem('cal_google_url') || '';
+
+        // Core logic to process feeds and list them
+        async function loadAndDisplayEvents() {
+            const apple = localStorage.getItem('cal_apple_url');
+            const google = localStorage.getItem('cal_google_url');
+            const listContainer = document.getElementById('agenda-list');
+
+            if (!apple && !google) {
+                listContainer.innerHTML = '<p class="no-events">No calendars configured yet. Tap Settings to add your feed URLs.</p>';
+                return;
+            }
+
+            listContainer.innerHTML = '<p class="no-events">Fetching calendar data stream securely...</p>';
+
+            // We will build the robust .ics feed text parser together next!
+            // For now, this placeholder handles the layout structure smoothly.
+            setTimeout(() => {
+                listContainer.innerHTML = `
+                    <div class="event-card" style="border-left-color: #34c759;">
+                        <p class="event-title">Architecture Framework Ready</p>
+                        <p class="event-time">All Day • Setup Success</p>
+                    </div>
+                    <div class="event-card" style="border-left-color: #0a84ff;">
+                        <p class="event-title">Next Step: Parse Real Data</p>
+                        <p class="event-time">12:00 PM - 1:00 PM</p>
+                    </div>
+                `;
+            }, 800);
+        }
+
+        // Run immediately on bootup
+        loadAndDisplayEvents();
+
+        // Register Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js').catch(err => console.log("SW error:", err));
+        }
+    </script>
+</body>
+</html>
