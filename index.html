@@ -38,8 +38,8 @@
             background-color: var(--bg-color);
             color: var(--text-main);
             font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-            overflow: hidden; /* Prevents unwanted browser scrolling */
-            position: fixed;  /* Anchors container layout tight on iOS devices */
+            overflow: hidden;
+            position: fixed;
         }
 
         body {
@@ -48,7 +48,19 @@
             box-sizing: border-box;
         }
 
-        /* Responsive Container handling the iOS Dynamic Island / Notch safe zones */
+        /* Zoom Container handles pinch scaling safely across views */
+        #zoom-wrapper {
+            width: 100%;
+            height: 100%;
+            transform-origin: top left;
+            transition: transform 0.1s ease-out;
+            will-change: transform;
+        }
+        
+        #zoom-wrapper.snap-back {
+            transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
         .view-pane {
             display: flex;
             flex-direction: column;
@@ -114,7 +126,6 @@
             font-weight: 600;
         }
 
-        /* Main Container: Forces subcomponents to stretch and consume exact remainder height */
         .display-container {
             flex: 1; 
             display: flex;
@@ -124,7 +135,6 @@
             margin: 0;
         }
 
-        /* Scrollable container for Day & Week schedules */
         .scrollable-content {
             flex: 1;
             overflow-y: auto;
@@ -142,11 +152,11 @@
         .event-title { font-size: 1.1rem; font-weight: 600; margin: 0 0 4px 0; }
         .event-time { font-size: 0.9rem; color: var(--text-muted); margin: 0; }
         
-        /* Edge-To-Edge Month Grid Engine */
+        /* Edge-To-Edge Month Grid Layout */
         .month-grid {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
-            grid-template-rows: auto repeat(6, 1fr); /* Programmatically forces 6 grid rows to fill 100% height evenly */
+            grid-template-rows: auto repeat(6, 1fr);
             gap: 1px;
             background-color: var(--border);
             height: 100%;
@@ -173,6 +183,8 @@
             box-sizing: border-box;
             min-height: 0;
             overflow: hidden;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
         }
         
         .grid-cell.today {
@@ -198,7 +210,6 @@
         
         .grid-cell.other-month { opacity: 0.2; }
 
-        /* Micro Event Display System */
         .micro-event {
             font-size: 0.62rem;
             font-weight: 500;
@@ -206,7 +217,7 @@
             border-radius: 3px;
             white-space: nowrap;
             overflow: hidden;
-            text-overflow: ellipsis; /* Truncates long words using an ellipsis (...) */
+            text-overflow: ellipsis;
             max-width: 100%;
             box-sizing: border-box;
             line-height: 1.2;
@@ -232,195 +243,103 @@
             margin-bottom: 10px;
         }
 
-        .settings-content {
-            padding: 0 16px;
-        }
+        .settings-content { padding: 0 16px; }
     </style>
 </head>
 <body>
 
-    <div id="agenda-pane" class="view-pane">
-        <header>
-            <h1 id="current-date-title">Schedule</h1>
-            <button class="icon-btn" onclick="toggleView('settings-pane')">Settings</button>
-        </header>
-
-        <div class="segmented-control">
-            <button id="btn-month" class="segment-btn" onclick="setDisplayMode('month')">Month</button>
-            <button id="btn-week" class="segment-btn" onclick="setDisplayMode('week')">Week</button>
-            <button id="btn-day" class="segment-btn" onclick="setDisplayMode('day')">Day</button>
-        </div>
+    <div id="zoom-wrapper">
         
-        <div class="display-container" id="calendar-display">
+        <div id="agenda-pane" class="view-pane">
+            <header>
+                <h1 id="current-date-title">May 2026</h1>
+                <button class="icon-btn" onclick="toggleView('settings-pane')">Settings</button>
+            </header>
+
+            <div class="segmented-control">
+                <button id="btn-month" class="segment-btn" onclick="setDisplayMode('month')">Month</button>
+                <button id="btn-week" class="segment-btn" onclick="setDisplayMode('week')">Week</button>
+                <button id="btn-day" class="segment-btn" onclick="setDisplayMode('day')">Day</button>
             </div>
-    </div>
-
-    <div id="settings-pane" class="view-pane hidden">
-        <header>
-            <h1>Feed Setup</h1>
-            <button class="icon-btn" onclick="toggleView('agenda-pane')">Back</button>
-        </header>
-
-        <div class="settings-content">
-            <p style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.4; margin-bottom: 25px;">
-                Paste any valid Apple or Google iCal URL below. It saves strictly to your device's memory.
-            </p>
             
-            <label style="display:block; font-size:0.85rem; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;" for="calendar-url">Calendar iCal / Webcal URL</label>
-            <input type="url" id="calendar-url" placeholder="Paste link here (https://... or webcal://...)" style="width:100%; background-color:var(--card-bg); border:1px solid var(--border); color:var(--text-main); padding:12px; border-radius:10px; font-size:1rem; box-sizing:border-box; margin-bottom:15px; outline:none;">
-
-            <button class="icon-btn" style="width:100%; background-color:var(--accent); color:#fff; padding:14px; border-radius:12px; font-size:1rem;" onclick="saveFeeds()">Save & Refresh</button>
+            <div class="display-container" id="calendar-display">
+                </div>
         </div>
+
+        <div id="settings-pane" class="view-pane hidden">
+            <header>
+                <h1>Feed Setup</h1>
+                <button class="icon-btn" onclick="toggleView('agenda-pane')">Back</button>
+            </header>
+
+            <div class="settings-content">
+                <p style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.4; margin-bottom: 25px;">
+                    Paste any valid Apple or Google iCal URL below. It saves strictly to your device's memory.
+                </p>
+                
+                <label style="display:block; font-size:0.85rem; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;" for="calendar-url">Calendar iCal / Webcal URL</label>
+                <input type="url" id="calendar-url" placeholder="Paste link here (https://... or webcal://...)" style="width:100%; background-color:var(--card-bg); border:1px solid var(--border); color:var(--text-main); padding:12px; border-radius:10px; font-size:1rem; box-sizing:border-box; margin-bottom:15px; outline:none;">
+
+                <button class="icon-btn" style="width:100%; background-color:var(--accent); color:#fff; padding:14px; border-radius:12px; font-size:1rem;" onclick="saveFeeds()">Save & Refresh</button>
+            </div>
+        </div>
+
     </div>
 
     <script>
-        let currentMode = 'month'; // Instantly opens to Month grid layout
+        let currentMode = 'month';
+        
+        // Target Date Tracking Anchor (Defaults to May 19, 2026)
+        let selectedDate = new Date(2026, 4, 19);
+        const anchorToday = new Date(2026, 4, 19);
 
-        // Target Date Anchor: May 19, 2026
-        const today = new Date(2026, 4, 19); 
-        const titleOptions = { weekday: 'long', month: 'short', day: 'numeric' };
-        document.getElementById('current-date-title').innerText = today.toLocaleDateString('en-US', titleOptions);
+        // Define our full list of sample items with accurate mock details
+        const hardcodedEvents = [
+            { day: 1, title: 'Game', type: 'evt-game', time: '5:30 PM', desc: 'Away Game vs. Raiders' },
+            { day: 1, title: 'Visitors coming', type: 'evt-banner', time: 'All Day', desc: 'Aunt Sarah arriving' },
+            { day: 2, title: 'Games', type: 'evt-game', time: '12:00 PM', desc: 'Double Header Tournament' },
+            { day: 3, title: 'Visitors coming', type: 'evt-banner', time: 'All Day', desc: 'Family Barbecue' },
+            { day: 4, title: 'Game', type: 'evt-game', time: '6:00 PM', desc: 'Home game field #3' },
+            { day: 5, title: 'Cinco de Mayo', type: 'evt-special', time: 'All Day', desc: 'National Holiday' },
+            { day: 5, title: 'Game', type: 'evt-game', time: '5:30 PM', desc: 'Varsity Match' },
+            { day: 6, title: 'Practice (White)', type: 'normal', style: 'color:var(--text-muted);', time: '4:00 PM - 6:00 PM', desc: 'Wear white jersey training set' },
+            { day: 7, title: 'Game', type: 'evt-game', time: '7:00 PM', desc: 'Under the lights match' },
+            { day: 8, title: 'Game', type: 'evt-game', time: '5:30 PM', desc: 'Playoff Qualifier' },
+            { day: 9, title: 'Games', type: 'evt-game', time: '9:00 AM', desc: 'Weekend opening sets' },
+            { day: 9, title: 'To Smiths', type: 'normal', style: 'color:#ffffff;', time: '4:30 PM', desc: 'Dinner at the Smith residence' },
+            { day: 10, title: "Mother's Day", type: 'evt-special', time: 'All Day', desc: 'Brunch reservation 11:00 AM' },
+            { day: 12, title: 'Game', type: 'evt-game', time: '6:00 PM', desc: 'District Round 1' },
+            { day: 14, title: 'Game', type: 'evt-game', time: '5:30 PM', desc: 'District Round 2' },
+            { day: 14, title: 'Jim Dietician', type: 'normal', style: 'color:var(--cal-yellow-text)', time: '1:15 PM', desc: 'Follow-up food plan review' },
+            { day: 15, title: 'Game', type: 'evt-game', time: '6:30 PM', desc: 'Semifinal Matchup' },
+            { day: 16, title: 'Tom Birthday', type: 'normal', style: 'color:var(--cal-yellow-text)', time: 'All Day', desc: 'Send gift card message' },
+            { day: 17, title: 'Mom coming', type: 'evt-banner', time: 'All Day', desc: 'Flight arrives at 3:00 PM' },
+            { day: 18, title: 'Mom coming', type: 'evt-banner', time: 'All Day', desc: 'Out to lunch family crew' },
+            { day: 18, title: 'Game', type: 'evt-game', time: '5:30 PM', desc: 'Finals Championship Match' },
+            { day: 19, title: 'Mom coming', type: 'evt-banner', time: 'All Day', desc: 'Museum visit afternoon plan' },
+            { day: 20, title: 'Mom coming', type: 'evt-banner', time: 'All Day', desc: 'Shopping center trip layout' },
+            { day: 20, title: 'White vs. Blue', type: 'normal', style: 'color:var(--text-muted);', time: '6:00 PM', desc: 'Annual club scrimmage challenge' },
+            { day: 21, title: 'Mom coming', type: 'evt-banner', time: 'All Day', desc: 'Mom departs evening track' },
+            { day: 21, title: 'Game', type: 'evt-game', time: '5:30 PM', desc: 'Post-season opening trial' },
+            { day: 21, title: 'Jim Colon', type: 'normal', style: 'color:#ffffff;', time: '7:00 AM', desc: 'Medical procedure - hospital arrival 6AM' },
+            { day: 22, title: 'Jane Vacation', type: 'evt-special', time: 'All Day', desc: 'Out of office through next week' },
+            { day: 24, title: 'Mom coming', type: 'evt-banner', time: 'All Day', desc: 'Bonus weekend layover' },
+            { day: 25, title: 'Mom coming', type: 'evt-banner', time: 'All Day', desc: 'Final airport dropoff route' },
+            { day: 25, title: 'Memorial Day', type: 'evt-special', time: 'All Day', desc: 'Federal holiday - office closed' },
+            { day: 26, title: 'Game', type: 'evt-game', time: '6:00 PM', desc: 'Summer league match 1' },
+            { day: 27, title: 'Game', type: 'evt-game', time: '5:30 PM', desc: 'Summer league match 2' },
+            { day: 29, title: 'Games', type: 'evt-game', time: '4:00 PM', desc: 'Weekend opener sets' },
+            { day: 31, title: 'Mom coming', type: 'evt-banner', time: 'All Day', desc: 'End of month checking calendar log' }
+        ];
 
         function toggleView(paneId) {
             document.querySelectorAll('.view-pane').forEach(pane => pane.classList.add('hidden'));
             document.getElementById(paneId).classList.remove('hidden');
-            
-            if (paneId === 'agenda-pane') {
-                updateCalendarUI();
-            }
+            if (paneId === 'agenda-pane') updateCalendarUI();
         }
 
-        function setDisplayMode(mode) {
-            currentMode = mode;
-            document.querySelectorAll('.segment-btn').forEach(btn => btn.classList.remove('active'));
-            document.getElementById(`btn-${mode}`).classList.add('active');
-            updateCalendarUI();
-        }
-
-        function saveFeeds() {
-            let rawUrl = document.getElementById('calendar-url').value.trim();
-
-            if (!rawUrl) {
-                localStorage.removeItem('cal_feed_url');
-                alert('Calendar link cleared. Using hardcoded preview events.');
-            } else {
-                if (rawUrl.startsWith('webcal://')) {
-                    rawUrl = 'https://' + rawUrl.substring(9);
-                }
-                localStorage.setItem('cal_feed_url', rawUrl);
-                alert('Link saved to device memory!');
-            }
-            toggleView('agenda-pane');
-        }
-
-        document.getElementById('calendar-url').value = localStorage.getItem('cal_feed_url') || '';
-
-        function updateCalendarUI() {
-            const feedUrl = localStorage.getItem('cal_feed_url');
-            const displayContainer = document.getElementById('calendar-display');
-
-            // ⚠️ EXPLICIT OVERRIDE: Even if a link is typed in, we run the layout grid 
-            // directly so you can instantly verify the structural spacing fixes.
-            if (currentMode === 'day') {
-                displayContainer.innerHTML = `
-                    <div class="scrollable-content">
-                        <div style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 12px; font-weight: 600;">TUESDAY, MAY 19</div>
-                        <div class="event-card" style="border-left-color: var(--cal-yellow-text);">
-                            <p class="event-title">Mom coming</p>
-                            <p class="event-time">All Day View</p>
-                        </div>
-                    </div>
-                `;
-            } 
-            else if (currentMode === 'week') {
-                displayContainer.innerHTML = `
-                    <div class="scrollable-content">
-                        <div class="week-day-block">
-                            <div class="week-day-title">Today • Tuesday, May 19</div>
-                            <div class="event-card" style="border-left-color: var(--cal-yellow-text);"><p class="event-title">Mom coming</p><p class="event-time">All Day</p></div>
-                        </div>
-                        <div class="week-day-block">
-                            <div class="week-day-title">Wednesday, May 20</div>
-                            <div class="event-card" style="border-left-color: var(--text-muted);"><p class="event-title">White vs. Blue scrimmage</p><p class="event-time">6:00 PM</p></div>
-                        </div>
-                        <div class="week-day-block">
-                            <div class="week-day-title">Thursday, May 21</div>
-                            <div class="event-card" style="border-left-color: var(--cal-orange-text);"><p class="event-title">Game</p><p class="event-time">5:30 PM</p></div>
-                            <div class="event-card" style="border-left-color: #ffffff;"><p class="event-title">Jim Colonoscopy</p><p class="event-time">7:00 AM</p></div>
-                        </div>
-                    </div>
-                `;
-            } 
-            else if (currentMode === 'month') {
-                let gridHTML = `
-                    <div class="month-grid">
-                        <div class="day-header">S</div><div class="day-header">M</div><div class="day-header">T</div>
-                        <div class="day-header">W</div><div class="day-header">T</div><div class="day-header">F</div><div class="day-header">S</div>
-                `;
-                
-                // April trailing spacer cells (May 1, 2026 is on a Friday)
-                for (let i = 0; i < 5; i++) {
-                    gridHTML += `<div class="grid-cell other-month"></div>`;
-                }
-                
-                // Build Month View cells programmatically with full hardcoded title labels
-                for (let dayNum = 1; dayNum <= 31; dayNum++) {
-                    const isToday = (dayNum === 19) ? 'today' : '';
-                    let eventsHTML = '';
-
-                    // Layout mapping corresponding exactly to your reference image items
-                    if (dayNum === 1)  eventsHTML += `<div class="micro-event evt-game">Game</div><div class="micro-event evt-banner">Visitors coming</div>`;
-                    if (dayNum === 2)  eventsHTML += `<div class="micro-event evt-game">Games</div>`;
-                    if (dayNum === 3)  eventsHTML += `<div class="micro-event evt-banner">Visitors coming</div>`;
-                    if (dayNum === 4)  eventsHTML += `<div class="micro-event evt-game">Game</div>`;
-                    if (dayNum === 5)  eventsHTML += `<div class="micro-event evt-special">Cinco de Mayo</div><div class="micro-event evt-game">Game</div>`;
-                    if (dayNum === 6)  eventsHTML += `<div class="micro-event" style="color:var(--text-muted);">Practice (White)</div>`;
-                    if (dayNum === 7)  eventsHTML += `<div class="micro-event evt-game">Game</div>`;
-                    if (dayNum === 8)  eventsHTML += `<div class="micro-event evt-game">Game</div>`;
-                    if (dayNum === 9)  eventsHTML += `<div class="micro-event evt-game">Games</div><div class="micro-event" style="color:#ffffff;">To Smiths</div>`;
-                    if (dayNum === 10) eventsHTML += `<div class="micro-event evt-special">Mother's Day</div>`;
-                    if (dayNum === 12) eventsHTML += `<div class="micro-event evt-game">Game</div>`;
-                    if (dayNum === 14) eventsHTML += `<div class="micro-event evt-game">Game</div><div class="micro-event" style="color:var(--cal-yellow-text)">Jim Dietician</div>`;
-                    if (dayNum === 15) eventsHTML += `<div class="micro-event evt-game">Game</div>`;
-                    if (dayNum === 16) eventsHTML += `<div class="micro-event" style="color:var(--cal-yellow-text)">Tom Birthday</div>`;
-                    
-                    // The "Mom coming" stretch banner spans (Days 17-21, 24-25, 31)
-                    if ((dayNum >= 17 && dayNum <= 21) || (dayNum >= 24 && dayNum <= 25) || dayNum === 31) {
-                        eventsHTML += `<div class="micro-event evt-banner">Mom coming</div>`;
-                    }
-                    
-                    if (dayNum === 18) eventsHTML += `<div class="micro-event evt-game">Game</div>`;
-                    if (dayNum === 20) eventsHTML += `<div class="micro-event" style="color:var(--text-muted);">White vs. Blue</div>`;
-                    if (dayNum === 21) eventsHTML += `<div class="micro-event evt-game">Game</div><div class="micro-event" style="color:#ffffff;">Jim Colon</div>`;
-                    if (dayNum === 22) eventsHTML += `<div class="micro-event evt-special">Jane Vacation</div>`;
-                    if (dayNum === 25) eventsHTML += `<div class="micro-event evt-special">Memorial Day</div>`;
-                    if (dayNum === 26) eventsHTML += `<div class="micro-event evt-game">Game</div>`;
-                    if (dayNum === 27) eventsHTML += `<div class="micro-event evt-game">Game</div>`;
-                    if (dayNum === 29) eventsHTML += `<div class="micro-event evt-game">Games</div>`;
-                    
-                    gridHTML += `
-                        <div class="grid-cell ${isToday}">
-                            <span class="cell-number">${dayNum}</span>
-                            ${eventsHTML}
-                        </div>
-                    `;
-                }
-                
-                // June trailing cell padding items
-                for (let i = 0; i < 6; i++) {
-                    gridHTML += `<div class="grid-cell other-month"></div>`;
-                }
-                
-                gridHTML += `</div>`;
-                displayContainer.innerHTML = gridHTML;
-            }
-        }
-
-        setDisplayMode('month');
-
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js').catch(err => console.log("SW error:", err));
-        }
-    </script>
-</body>
-</html>
+        // Handles changing headers dynamically depending on view context
+        function updateHeaderTitle() {
+            const heading = document.getElementById('current-date-title');
+            if (currentMode === 'month') {
+                heading
