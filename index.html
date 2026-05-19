@@ -34,10 +34,12 @@
             margin: 0;
             padding: 0;
             height: 100%;
+            width: 100%;
             background-color: var(--bg-color);
             color: var(--text-main);
             font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-            overflow: hidden; /* Prevents awkward elastic bouncing on the main container */
+            overflow: hidden; /* Prevents unwanted browser scrolling */
+            position: fixed;  /* Anchors container layout tight on iOS devices */
         }
 
         body {
@@ -87,7 +89,7 @@
             border: 1px solid var(--border);
             border-radius: 9px;
             padding: 2px;
-            margin: 0 16px 10px 16px;
+            margin: 0 16px 15px 16px;
             flex-shrink: 0;
         }
 
@@ -112,20 +114,21 @@
             font-weight: 600;
         }
 
-        /* Dynamic Render Display Region expanding to fill exactly what is left */
+        /* Main Container: Forces subcomponents to stretch and consume exact remainder height */
         .display-container {
             flex: 1; 
             display: flex;
             flex-direction: column;
-            min-height: 0; /* Important override for inner flex items */
-            padding: 0 4px;
+            min-height: 0; 
+            padding: 0;
+            margin: 0;
         }
 
-        /* Scrollable layout zones for Day & Week timelines */
+        /* Scrollable container for Day & Week schedules */
         .scrollable-content {
             flex: 1;
             overflow-y: auto;
-            padding: 0 12px;
+            padding: 0 16px;
             -webkit-overflow-scrolling: touch;
         }
 
@@ -143,7 +146,7 @@
         .month-grid {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
-            grid-template-rows: auto repeat(6, 1fr); /* Programmatically forces rows to share height equally */
+            grid-template-rows: auto repeat(6, 1fr); /* Programmatically forces 6 grid rows to fill 100% height evenly */
             gap: 1px;
             background-color: var(--border);
             height: 100%;
@@ -195,15 +198,15 @@
         
         .grid-cell.other-month { opacity: 0.2; }
 
-        /* Inline Month Event Micro-Labels */
+        /* Micro Event Display System */
         .micro-event {
             font-size: 0.62rem;
             font-weight: 500;
-            padding: 1px 3px;
+            padding: 2px 4px;
             border-radius: 3px;
             white-space: nowrap;
             overflow: hidden;
-            text-overflow: ellipsis;
+            text-overflow: ellipsis; /* Truncates long words using an ellipsis (...) */
             max-width: 100%;
             box-sizing: border-box;
             line-height: 1.2;
@@ -229,7 +232,6 @@
             margin-bottom: 10px;
         }
 
-        /* Settings View Layout Constraints */
         .settings-content {
             padding: 0 16px;
         }
@@ -272,8 +274,9 @@
     </div>
 
     <script>
-        let currentMode = 'month'; // Default directly to month grid setup
+        let currentMode = 'month'; // Instantly opens to Month grid layout
 
+        // Target Date Anchor: May 19, 2026
         const today = new Date(2026, 4, 19); 
         const titleOptions = { weekday: 'long', month: 'short', day: 'numeric' };
         document.getElementById('current-date-title').innerText = today.toLocaleDateString('en-US', titleOptions);
@@ -299,13 +302,13 @@
 
             if (!rawUrl) {
                 localStorage.removeItem('cal_feed_url');
-                alert('Calendar link cleared.');
+                alert('Calendar link cleared. Using hardcoded preview events.');
             } else {
                 if (rawUrl.startsWith('webcal://')) {
                     rawUrl = 'https://' + rawUrl.substring(9);
                 }
                 localStorage.setItem('cal_feed_url', rawUrl);
-                alert('Calendar link verified and saved!');
+                alert('Link saved to device memory!');
             }
             toggleView('agenda-pane');
         }
@@ -316,17 +319,8 @@
             const feedUrl = localStorage.getItem('cal_feed_url');
             const displayContainer = document.getElementById('calendar-display');
 
-            if (feedUrl) {
-                displayContainer.innerHTML = `
-                    <div style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
-                        <p style="font-weight: 600; color: var(--text-main);">Stream Connection Active</p>
-                        <p style="font-size: 0.9rem; word-break: break-all; color: var(--accent);">${feedUrl}</p>
-                        <p style="font-size: 0.9rem; margin-top: 20px;">Ready to deploy real stream parser engine metrics.</p>
-                    </div>
-                `;
-                return;
-            }
-
+            // ⚠️ EXPLICIT OVERRIDE: Even if a link is typed in, we run the layout grid 
+            // directly so you can instantly verify the structural spacing fixes.
             if (currentMode === 'day') {
                 displayContainer.innerHTML = `
                     <div class="scrollable-content">
@@ -343,4 +337,90 @@
                     <div class="scrollable-content">
                         <div class="week-day-block">
                             <div class="week-day-title">Today • Tuesday, May 19</div>
-                            <div class="event-card" style="border-left-color: var(--cal-yellow-text);"><p class="event-title">Mom coming
+                            <div class="event-card" style="border-left-color: var(--cal-yellow-text);"><p class="event-title">Mom coming</p><p class="event-time">All Day</p></div>
+                        </div>
+                        <div class="week-day-block">
+                            <div class="week-day-title">Wednesday, May 20</div>
+                            <div class="event-card" style="border-left-color: var(--text-muted);"><p class="event-title">White vs. Blue scrimmage</p><p class="event-time">6:00 PM</p></div>
+                        </div>
+                        <div class="week-day-block">
+                            <div class="week-day-title">Thursday, May 21</div>
+                            <div class="event-card" style="border-left-color: var(--cal-orange-text);"><p class="event-title">Game</p><p class="event-time">5:30 PM</p></div>
+                            <div class="event-card" style="border-left-color: #ffffff;"><p class="event-title">Jim Colonoscopy</p><p class="event-time">7:00 AM</p></div>
+                        </div>
+                    </div>
+                `;
+            } 
+            else if (currentMode === 'month') {
+                let gridHTML = `
+                    <div class="month-grid">
+                        <div class="day-header">S</div><div class="day-header">M</div><div class="day-header">T</div>
+                        <div class="day-header">W</div><div class="day-header">T</div><div class="day-header">F</div><div class="day-header">S</div>
+                `;
+                
+                // April trailing spacer cells (May 1, 2026 is on a Friday)
+                for (let i = 0; i < 5; i++) {
+                    gridHTML += `<div class="grid-cell other-month"></div>`;
+                }
+                
+                // Build Month View cells programmatically with full hardcoded title labels
+                for (let dayNum = 1; dayNum <= 31; dayNum++) {
+                    const isToday = (dayNum === 19) ? 'today' : '';
+                    let eventsHTML = '';
+
+                    // Layout mapping corresponding exactly to your reference image items
+                    if (dayNum === 1)  eventsHTML += `<div class="micro-event evt-game">Game</div><div class="micro-event evt-banner">Visitors coming</div>`;
+                    if (dayNum === 2)  eventsHTML += `<div class="micro-event evt-game">Games</div>`;
+                    if (dayNum === 3)  eventsHTML += `<div class="micro-event evt-banner">Visitors coming</div>`;
+                    if (dayNum === 4)  eventsHTML += `<div class="micro-event evt-game">Game</div>`;
+                    if (dayNum === 5)  eventsHTML += `<div class="micro-event evt-special">Cinco de Mayo</div><div class="micro-event evt-game">Game</div>`;
+                    if (dayNum === 6)  eventsHTML += `<div class="micro-event" style="color:var(--text-muted);">Practice (White)</div>`;
+                    if (dayNum === 7)  eventsHTML += `<div class="micro-event evt-game">Game</div>`;
+                    if (dayNum === 8)  eventsHTML += `<div class="micro-event evt-game">Game</div>`;
+                    if (dayNum === 9)  eventsHTML += `<div class="micro-event evt-game">Games</div><div class="micro-event" style="color:#ffffff;">To Smiths</div>`;
+                    if (dayNum === 10) eventsHTML += `<div class="micro-event evt-special">Mother's Day</div>`;
+                    if (dayNum === 12) eventsHTML += `<div class="micro-event evt-game">Game</div>`;
+                    if (dayNum === 14) eventsHTML += `<div class="micro-event evt-game">Game</div><div class="micro-event" style="color:var(--cal-yellow-text)">Jim Dietician</div>`;
+                    if (dayNum === 15) eventsHTML += `<div class="micro-event evt-game">Game</div>`;
+                    if (dayNum === 16) eventsHTML += `<div class="micro-event" style="color:var(--cal-yellow-text)">Tom Birthday</div>`;
+                    
+                    // The "Mom coming" stretch banner spans (Days 17-21, 24-25, 31)
+                    if ((dayNum >= 17 && dayNum <= 21) || (dayNum >= 24 && dayNum <= 25) || dayNum === 31) {
+                        eventsHTML += `<div class="micro-event evt-banner">Mom coming</div>`;
+                    }
+                    
+                    if (dayNum === 18) eventsHTML += `<div class="micro-event evt-game">Game</div>`;
+                    if (dayNum === 20) eventsHTML += `<div class="micro-event" style="color:var(--text-muted);">White vs. Blue</div>`;
+                    if (dayNum === 21) eventsHTML += `<div class="micro-event evt-game">Game</div><div class="micro-event" style="color:#ffffff;">Jim Colon</div>`;
+                    if (dayNum === 22) eventsHTML += `<div class="micro-event evt-special">Jane Vacation</div>`;
+                    if (dayNum === 25) eventsHTML += `<div class="micro-event evt-special">Memorial Day</div>`;
+                    if (dayNum === 26) eventsHTML += `<div class="micro-event evt-game">Game</div>`;
+                    if (dayNum === 27) eventsHTML += `<div class="micro-event evt-game">Game</div>`;
+                    if (dayNum === 29) eventsHTML += `<div class="micro-event evt-game">Games</div>`;
+                    
+                    gridHTML += `
+                        <div class="grid-cell ${isToday}">
+                            <span class="cell-number">${dayNum}</span>
+                            ${eventsHTML}
+                        </div>
+                    `;
+                }
+                
+                // June trailing cell padding items
+                for (let i = 0; i < 6; i++) {
+                    gridHTML += `<div class="grid-cell other-month"></div>`;
+                }
+                
+                gridHTML += `</div>`;
+                displayContainer.innerHTML = gridHTML;
+            }
+        }
+
+        setDisplayMode('month');
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js').catch(err => console.log("SW error:", err));
+        }
+    </script>
+</body>
+</html>
