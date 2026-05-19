@@ -21,7 +21,7 @@
             --border: #2c2c2e;
             --segment-bg: #111112;
             
-            /* Custom Calendar Event Colors */
+            /* Custom Calendar Event Colors matching your photo */
             --cal-orange: rgba(255, 149, 0, 0.3);
             --cal-orange-text: #ff9500;
             --cal-green: rgba(52, 199, 89, 0.3);
@@ -48,13 +48,15 @@
             box-sizing: border-box;
         }
 
-        /* Zoom Container handles pinch scaling safely across views */
+        /* Zoom Wrapper Container */
         #zoom-wrapper {
             width: 100%;
             height: 100%;
             transform-origin: top left;
             transition: transform 0.1s ease-out;
             will-change: transform;
+            display: flex;
+            flex-direction: column;
         }
         
         #zoom-wrapper.snap-back {
@@ -94,7 +96,7 @@
             -webkit-tap-highlight-color: transparent;
         }
 
-        /* Segmented Control Selector */
+        /* Segmented Navigation Bar */
         .segmented-control {
             display: flex;
             background-color: var(--segment-bg);
@@ -126,6 +128,7 @@
             font-weight: 600;
         }
 
+        /* Display Layout Container */
         .display-container {
             flex: 1; 
             display: flex;
@@ -135,6 +138,7 @@
             margin: 0;
         }
 
+        /* Scrollable List for Day and Week Modes */
         .scrollable-content {
             flex: 1;
             overflow-y: auto;
@@ -152,11 +156,11 @@
         .event-title { font-size: 1.1rem; font-weight: 600; margin: 0 0 4px 0; }
         .event-time { font-size: 0.9rem; color: var(--text-muted); margin: 0; }
         
-        /* Edge-To-Edge Month Grid Layout */
+        /* Edge-To-Edge Month Grid styling */
         .month-grid {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
-            grid-template-rows: auto repeat(6, 1fr);
+            grid-template-rows: auto repeat(6, 1fr); /* 6 grid rows expand to fill space evenly */
             gap: 1px;
             background-color: var(--border);
             height: 100%;
@@ -210,6 +214,7 @@
         
         .grid-cell.other-month { opacity: 0.2; }
 
+        /* Micro Event Display styling */
         .micro-event {
             font-size: 0.62rem;
             font-weight: 500;
@@ -259,87 +264,4 @@
             <div class="segmented-control">
                 <button id="btn-month" class="segment-btn" onclick="setDisplayMode('month')">Month</button>
                 <button id="btn-week" class="segment-btn" onclick="setDisplayMode('week')">Week</button>
-                <button id="btn-day" class="segment-btn" onclick="setDisplayMode('day')">Day</button>
-            </div>
-            
-            <div class="display-container" id="calendar-display">
-                </div>
-        </div>
-
-        <div id="settings-pane" class="view-pane hidden">
-            <header>
-                <h1>Feed Setup</h1>
-                <button class="icon-btn" onclick="toggleView('agenda-pane')">Back</button>
-            </header>
-
-            <div class="settings-content">
-                <p style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.4; margin-bottom: 25px;">
-                    Paste any valid Apple or Google iCal URL below. It saves strictly to your device's memory.
-                </p>
-                
-                <label style="display:block; font-size:0.85rem; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;" for="calendar-url">Calendar iCal / Webcal URL</label>
-                <input type="url" id="calendar-url" placeholder="Paste link here (https://... or webcal://...)" style="width:100%; background-color:var(--card-bg); border:1px solid var(--border); color:var(--text-main); padding:12px; border-radius:10px; font-size:1rem; box-sizing:border-box; margin-bottom:15px; outline:none;">
-
-                <button class="icon-btn" style="width:100%; background-color:var(--accent); color:#fff; padding:14px; border-radius:12px; font-size:1rem;" onclick="saveFeeds()">Save & Refresh</button>
-            </div>
-        </div>
-
-    </div>
-
-    <script>
-        let currentMode = 'month';
-        
-        // Target Date Tracking Anchor (Defaults to May 19, 2026)
-        let selectedDate = new Date(2026, 4, 19);
-        const anchorToday = new Date(2026, 4, 19);
-
-        // Define our full list of sample items with accurate mock details
-        const hardcodedEvents = [
-            { day: 1, title: 'Game', type: 'evt-game', time: '5:30 PM', desc: 'Away Game vs. Raiders' },
-            { day: 1, title: 'Visitors coming', type: 'evt-banner', time: 'All Day', desc: 'Aunt Sarah arriving' },
-            { day: 2, title: 'Games', type: 'evt-game', time: '12:00 PM', desc: 'Double Header Tournament' },
-            { day: 3, title: 'Visitors coming', type: 'evt-banner', time: 'All Day', desc: 'Family Barbecue' },
-            { day: 4, title: 'Game', type: 'evt-game', time: '6:00 PM', desc: 'Home game field #3' },
-            { day: 5, title: 'Cinco de Mayo', type: 'evt-special', time: 'All Day', desc: 'National Holiday' },
-            { day: 5, title: 'Game', type: 'evt-game', time: '5:30 PM', desc: 'Varsity Match' },
-            { day: 6, title: 'Practice (White)', type: 'normal', style: 'color:var(--text-muted);', time: '4:00 PM - 6:00 PM', desc: 'Wear white jersey training set' },
-            { day: 7, title: 'Game', type: 'evt-game', time: '7:00 PM', desc: 'Under the lights match' },
-            { day: 8, title: 'Game', type: 'evt-game', time: '5:30 PM', desc: 'Playoff Qualifier' },
-            { day: 9, title: 'Games', type: 'evt-game', time: '9:00 AM', desc: 'Weekend opening sets' },
-            { day: 9, title: 'To Smiths', type: 'normal', style: 'color:#ffffff;', time: '4:30 PM', desc: 'Dinner at the Smith residence' },
-            { day: 10, title: "Mother's Day", type: 'evt-special', time: 'All Day', desc: 'Brunch reservation 11:00 AM' },
-            { day: 12, title: 'Game', type: 'evt-game', time: '6:00 PM', desc: 'District Round 1' },
-            { day: 14, title: 'Game', type: 'evt-game', time: '5:30 PM', desc: 'District Round 2' },
-            { day: 14, title: 'Jim Dietician', type: 'normal', style: 'color:var(--cal-yellow-text)', time: '1:15 PM', desc: 'Follow-up food plan review' },
-            { day: 15, title: 'Game', type: 'evt-game', time: '6:30 PM', desc: 'Semifinal Matchup' },
-            { day: 16, title: 'Tom Birthday', type: 'normal', style: 'color:var(--cal-yellow-text)', time: 'All Day', desc: 'Send gift card message' },
-            { day: 17, title: 'Mom coming', type: 'evt-banner', time: 'All Day', desc: 'Flight arrives at 3:00 PM' },
-            { day: 18, title: 'Mom coming', type: 'evt-banner', time: 'All Day', desc: 'Out to lunch family crew' },
-            { day: 18, title: 'Game', type: 'evt-game', time: '5:30 PM', desc: 'Finals Championship Match' },
-            { day: 19, title: 'Mom coming', type: 'evt-banner', time: 'All Day', desc: 'Museum visit afternoon plan' },
-            { day: 20, title: 'Mom coming', type: 'evt-banner', time: 'All Day', desc: 'Shopping center trip layout' },
-            { day: 20, title: 'White vs. Blue', type: 'normal', style: 'color:var(--text-muted);', time: '6:00 PM', desc: 'Annual club scrimmage challenge' },
-            { day: 21, title: 'Mom coming', type: 'evt-banner', time: 'All Day', desc: 'Mom departs evening track' },
-            { day: 21, title: 'Game', type: 'evt-game', time: '5:30 PM', desc: 'Post-season opening trial' },
-            { day: 21, title: 'Jim Colon', type: 'normal', style: 'color:#ffffff;', time: '7:00 AM', desc: 'Medical procedure - hospital arrival 6AM' },
-            { day: 22, title: 'Jane Vacation', type: 'evt-special', time: 'All Day', desc: 'Out of office through next week' },
-            { day: 24, title: 'Mom coming', type: 'evt-banner', time: 'All Day', desc: 'Bonus weekend layover' },
-            { day: 25, title: 'Mom coming', type: 'evt-banner', time: 'All Day', desc: 'Final airport dropoff route' },
-            { day: 25, title: 'Memorial Day', type: 'evt-special', time: 'All Day', desc: 'Federal holiday - office closed' },
-            { day: 26, title: 'Game', type: 'evt-game', time: '6:00 PM', desc: 'Summer league match 1' },
-            { day: 27, title: 'Game', type: 'evt-game', time: '5:30 PM', desc: 'Summer league match 2' },
-            { day: 29, title: 'Games', type: 'evt-game', time: '4:00 PM', desc: 'Weekend opener sets' },
-            { day: 31, title: 'Mom coming', type: 'evt-banner', time: 'All Day', desc: 'End of month checking calendar log' }
-        ];
-
-        function toggleView(paneId) {
-            document.querySelectorAll('.view-pane').forEach(pane => pane.classList.add('hidden'));
-            document.getElementById(paneId).classList.remove('hidden');
-            if (paneId === 'agenda-pane') updateCalendarUI();
-        }
-
-        // Handles changing headers dynamically depending on view context
-        function updateHeaderTitle() {
-            const heading = document.getElementById('current-date-title');
-            if (currentMode === 'month') {
-                heading
+                <button id="btn-day"
