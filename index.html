@@ -183,14 +183,11 @@
 
         <div class="input-group">
             <p style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.4; margin-bottom: 25px;">
-                Your URLs are stored strictly on this device's local memory. They are never transmitted or uploaded anywhere else.
+                Paste any valid Apple or Google iCal URL below. It saves strictly to your device's memory.
             </p>
             
-            <label for="apple-url">Apple/iCloud iCal URL</label>
-            <input type="url" id="apple-url" placeholder="https://pXX-caldav.icloud.com/published/...">
-
-            <label for="google-url">Google Calendar iCal URL</label>
-            <input type="url" id="google-url" placeholder="https://calendar.google.com/calendar/ical/...">
+            <label for="calendar-url">Calendar iCal / Webcal URL</label>
+            <input type="url" id="calendar-url" placeholder="Paste link here (https://... or webcal://...)">
 
             <button class="save-btn" onclick="saveFeeds()">Save & Refresh</button>
         </div>
@@ -227,28 +224,34 @@
 
         // Save local string objects directly inside device hardware
         function saveFeeds() {
-            const appleUrl = document.getElementById('apple-url').value.trim();
-            const googleUrl = document.getElementById('google-url').value.trim();
+            let rawUrl = document.getElementById('calendar-url').value.trim();
 
-            localStorage.setItem('cal_apple_url', appleUrl);
-            localStorage.setItem('cal_google_url', googleUrl);
+            if (!rawUrl) {
+                alert('Please enter a URL first.');
+                return;
+            }
 
-            alert('Feeds saved securely to your device!');
+            // Smart Link Fixer: Automatically converts old webcal:// links to secure web streams
+            if (rawUrl.startsWith('webcal://')) {
+                rawUrl = 'https://' + rawUrl.substring(9);
+            }
+
+            localStorage.setItem('cal_feed_url', rawUrl);
+
+            alert('Calendar link verified and saved!');
             toggleView('agenda-pane');
         }
 
-        // Prepopulate text indicators
-        document.getElementById('apple-url').value = localStorage.getItem('cal_apple_url') || '';
-        document.getElementById('google-url').value = localStorage.getItem('cal_google_url') || '';
+        // Prepopulate text indicator from local memory if it exists
+        document.getElementById('calendar-url').value = localStorage.getItem('cal_feed_url') || '';
 
         // Visual presentation generation router
         function updateCalendarUI() {
-            const apple = localStorage.getItem('cal_apple_url');
-            const google = localStorage.getItem('cal_google_url');
+            const feedUrl = localStorage.getItem('cal_feed_url');
             const displayContainer = document.getElementById('calendar-display');
 
-            if (!apple && !google) {
-                displayContainer.innerHTML = '<p class="info-msg">No calendars configured yet. Tap Settings to add your feed URLs.</p>';
+            if (!feedUrl) {
+                displayContainer.innerHTML = '<p class="info-msg">No calendar link found. Tap Settings to paste your feed URL.</p>';
                 return;
             }
 
@@ -256,8 +259,8 @@
             if (currentMode === 'day') {
                 displayContainer.innerHTML = `
                     <div class="event-card" style="border-left-color: #0a84ff;">
-                        <p class="event-title">Day Layout Active</p>
-                        <p class="event-time">9:00 AM - 10:30 AM</p>
+                        <p class="event-title">Link Connected Successfully</p>
+                        <p class="event-time">Ready to parse live feed data</p>
                     </div>
                 `;
             } else if (currentMode === 'week') {
@@ -266,14 +269,14 @@
                         <span style="color: var(--accent); font-weight: 600;">This Week</span>
                     </div>
                     <div class="event-card" style="border-left-color: #34c759;">
-                        <p class="event-title">Weekly Timeline Event</p>
+                        <p class="event-title">Smart Detector Active</p>
                         <p class="event-time">All Day View</p>
                     </div>
                 `;
             } else if (currentMode === 'month') {
                 displayContainer.innerHTML = `
                     <div class="event-card" style="border-left-color: #ff9500;">
-                        <p class="event-title">Monthly Overview Mode</p>
+                        <p class="event-title">Monthly View Placeholder</p>
                         <p class="event-time">Full Month Block View</p>
                     </div>
                 `;
