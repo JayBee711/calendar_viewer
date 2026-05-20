@@ -4,163 +4,105 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
     <title>Custom Calendar Viewer</title>
-    
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="My Cal">
-    
-    <link rel="manifest" href="manifest.json">
-
     <style>
-        :root {
-            --bg-color: #000000;
-            --card-bg: #1c1c1e;
-            --text-main: #ffffff;
-            --text-muted: #8e8e93;
-            --accent: #0a84ff;
-            --border: #2c2c2e;
-            --segment-bg: #111112;
-            --text-scale: 1.0;
-            --cal-orange: rgba(255, 149, 0, 0.3);
-            --cal-orange-text: #ff9500;
-            --cal-green: rgba(52, 199, 89, 0.3);
-            --cal-green-text: #34c759;
-            --cal-yellow: rgba(255, 214, 10, 0.25);
-            --cal-yellow-text: #ffd60a;
-        }
-
-        html, body {
-            margin: 0; padding: 0; height: 100%; width: 100%;
-            background-color: var(--bg-color); color: var(--text-main);
-            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-            overflow: hidden; position: fixed;
-        }
-
-        body { display: flex; flex-direction: column; box-sizing: border-box; padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); }
-
-        header { display: flex; justify-content: space-between; align-items: center; padding: 15px 16px 10px 16px; flex-shrink: 0; background-color: var(--bg-color); }
-        h1 { margin: 0; font-size: 1.8rem; font-weight: 700; }
-        .header-controls { display: flex; gap: 16px; align-items: center; }
-        .icon-btn { background: none; border: none; color: var(--accent); font-size: 1rem; font-weight: 600; cursor: pointer; padding: 8px 0; -webkit-tap-highlight-color: transparent; }
-
-        .segmented-control { display: flex; background-color: var(--segment-bg); border: 1px solid var(--border); border-radius: 9px; padding: 2px; margin: 0 16px 15px 16px; flex-shrink: 0; }
-        .segment-btn { flex: 1; background: none; border: none; color: var(--text-muted); padding: 8px 0; font-size: 0.9rem; font-weight: 500; border-radius: 7px; cursor: pointer; transition: all 0.15s ease; -webkit-tap-highlight-color: transparent; }
-        .segment-btn.active { background-color: var(--card-bg); color: var(--text-main); box-shadow: 0 1px 3px rgba(0,0,0,0.3); font-weight: 600; }
-
-        .view-pane { display: flex; flex-direction: column; flex: 1; min-height: 0; width: 100%; }
+        :root { --bg-color: #000000; --card-bg: #1c1c1e; --text-main: #ffffff; --text-muted: #8e8e93; --accent: #0a84ff; --border: #2c2c2e; --segment-bg: #111112; --text-scale: 1.0; --cal-yellow: rgba(255, 214, 10, 0.25); --cal-yellow-text: #ffd60a; }
+        html, body { margin: 0; padding: 0; height: 100%; width: 100%; background: var(--bg-color); color: var(--text-main); font-family: -apple-system, sans-serif; overflow: hidden; position: fixed; }
+        .view-pane { display: flex; flex-direction: column; height: 100%; }
         .view-pane.hidden { display: none !important; }
-
-        #calendar-display { flex: 1; min-height: 0; width: 100%; position: relative; }
-        .scrollable-content { height: 100%; overflow-y: auto; padding: 0 16px; box-sizing: border-box; -webkit-overflow-scrolling: touch; }
-
-        .event-card { background-color: var(--card-bg); border-left: 4px solid var(--accent); padding: 14px; border-radius: 0 12px 12px 0; margin-bottom: 12px; cursor: pointer; }
+        header { display: flex; justify-content: space-between; align-items: center; padding: 15px; }
+        #calendar-display { flex: 1; position: relative; overflow-y: auto; }
         
+        /* Month Grid with Overlay Engine */
         .month-view-container { position: relative; height: 100%; width: 100%; }
-        .month-grid { display: grid; grid-template-columns: repeat(7, 1fr); grid-template-rows: auto repeat(6, 1fr); gap: 1px; background-color: var(--border); height: 100%; width: 100%; box-sizing: border-box; }
-        .day-header { background-color: var(--segment-bg); text-align: center; font-size: 0.75rem; font-weight: 600; color: var(--text-muted); padding: 8px 0; text-transform: uppercase; z-index: 5; }
-        .grid-cell { background-color: #000000; padding: 2px; display: flex; flex-direction: column; gap: 2px; box-sizing: border-box; cursor: pointer; position: relative; }
-        .grid-cell.today { background-color: #1c1c1e; }
-        .cell-number { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); width: 16px; height: 16px; text-align: center; margin-bottom: 1px; z-index: 4; }
-        .grid-cell.today .cell-number { background-color: var(--accent); color: #ffffff; border-radius: 50%; }
+        .month-grid { display: grid; grid-template-columns: repeat(7, 1fr); grid-template-rows: auto repeat(5, 1fr); gap: 1px; background: var(--border); height: 100%; }
+        .grid-cell { background: #000000; padding: 2px; position: relative; }
         
-        .cell-events-bucket { display: flex; flex-direction: column; gap: 2px; width: 100%; flex: 1; padding-top: 18px; }
-        .micro-event { font-size: 0.62rem; font-weight: 500; padding: 2px 4px; border-radius: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        /* Stacking Engine Classes */
+        .continuous-banner-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: grid; grid-template-columns: repeat(7, 1fr); grid-template-rows: auto repeat(5, 1fr); gap: 1px; }
+        .continuous-banner-item { pointer-events: auto; z-index: 10; cursor: pointer; font-size: 0.6rem; padding: 2px 4px; border-radius: 4px; background: var(--cal-yellow); color: var(--cal-yellow-text); white-space: nowrap; overflow: hidden; margin: 0 1px; }
         
-        .evt-game { background-color: var(--cal-orange); color: var(--cal-orange-text); }
-        .evt-special { background-color: var(--cal-green); color: var(--cal-green-text); }
-        
-        .continuous-banner-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: grid; grid-template-columns: repeat(7, 1fr); grid-template-rows: auto repeat(6, 1fr); gap: 1px; }
-        .continuous-banner-item { pointer-events: auto; z-index: 10; cursor: pointer; font-size: 0.62rem; font-weight: 600; padding: 3px 6px; border-radius: 4px; background-color: var(--cal-yellow); color: var(--cal-yellow-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.75); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.2s ease; padding: 20px; }
-        .modal-overlay.active { opacity: 1; pointer-events: auto; }
-        .modal-card { background-color: #1c1c1e; border: 1px solid var(--border); border-radius: 14px; width: 100%; max-width: 400px; padding: 20px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-overlay.active { display: flex; }
+        .modal-card { background: var(--card-bg); padding: 20px; border-radius: 14px; width: 300px; }
     </style>
 </head>
 <body>
-
     <div id="agenda-pane" class="view-pane">
         <header>
             <h1 id="current-date-title">May 2026</h1>
-            <div class="header-controls">
-                <button id="btn-text-scale" class="icon-btn" onclick="cycleTextScale()">A+</button>
-                <button class="icon-btn" onclick="toggleView('settings-pane')">Settings</button>
-            </div>
+            <button onclick="toggleView('settings-pane')">Settings</button>
         </header>
-        <div class="segmented-control">
-            <button id="btn-month" class="segment-btn" onclick="setDisplayMode('month')">Month</button>
-            <button id="btn-week" class="segment-btn" onclick="setDisplayMode('week')">Week</button>
-            <button id="btn-day" class="segment-btn" onclick="setDisplayMode('day')">Day</button>
-        </div>
         <div id="calendar-display"></div>
     </div>
 
     <div id="settings-pane" class="view-pane hidden">
-        <header><h1>Feed Setup</h1><button class="icon-btn" onclick="toggleView('agenda-pane')">Back</button></header>
-        <div class="settings-content" style="padding: 0 16px;">
-            <input type="url" id="calendar-url" placeholder="Paste iCal URL..." style="width:100%; padding:12px; margin-bottom:15px; border-radius:10px; border:1px solid var(--border); background:var(--card-bg); color:white;">
-            <button class="icon-btn" style="width:100%; background:var(--accent); color:white; padding:14px; border-radius:12px;" onclick="saveFeeds()">Save & Refresh</button>
-        </div>
+        <header><h1>Settings</h1><button onclick="toggleView('agenda-pane')">Back</button></header>
     </div>
 
     <div id="detail-modal" class="modal-overlay" onclick="closeEventDetail()">
         <div class="modal-card" onclick="event.stopPropagation()">
-            <h2 id="modal-event-title" class="modal-title" style="margin-top:0;">Details</h2>
-            <p id="modal-event-time" style="color:var(--text-muted);"></p>
-            <p id="modal-event-desc"></p>
-            <button class="icon-btn" style="width:100%;" onclick="closeEventDetail()">Close</button>
+            <h2 id="modal-event-title">Event</h2>
+            <button onclick="closeEventDetail()">Close</button>
         </div>
     </div>
 
     <script>
-        var currentMode = 'month', selectedDay = 19, anchorYear = 2026, anchorMonth = 4;
         var hardcodedEvents = [
-            { id: 2, startDay: 1, endDay: 3, title: 'Visitors coming', type: 'evt-banner', time: 'All Day', desc: 'Family visit' },
-            { id: 19, startDay: 17, endDay: 31, title: 'Mom coming', type: 'evt-banner', time: 'All Day', desc: 'Extended stay' },
-            { id: 1, day: 1, title: 'Game', type: 'evt-game', time: '5:30 PM', desc: 'Away match' },
-            { id: 3, day: 2, title: 'Games', type: 'evt-game', time: '12:00 PM', desc: 'Tournament' }
+            { id: 2, startDay: 1, endDay: 3, title: 'Visitors coming', type: 'evt-banner' },
+            { id: 19, startDay: 17, endDay: 31, title: 'Mom coming', type: 'evt-banner' }
         ];
 
-        function isEventOnDay(e, dayNum) {
-            if (e.day === dayNum) return true;
-            if (e.startDay !== undefined && e.endDay !== undefined) return dayNum >= e.startDay && dayNum <= e.endDay;
-            return false;
-        }
-
-        function setDisplayMode(mode, clickedDay) {
-            currentMode = mode;
-            if (clickedDay) selectedDay = parseInt(clickedDay, 10);
-            updateCalendarUI();
-        }
-
         function updateCalendarUI() {
-            var displayContainer = document.getElementById('calendar-display');
-            displayContainer.innerHTML = '';
+            var container = document.getElementById('calendar-display');
+            container.innerHTML = '';
+            
+            let grid = document.createElement('div');
+            grid.className = 'month-grid';
+            for(let i=0; i<35; i++) {
+                let cell = document.createElement('div');
+                cell.className = 'grid-cell';
+                grid.appendChild(cell);
+            }
+            container.appendChild(grid);
 
-            if (currentMode === 'month') {
-                var monthWrapper = document.createElement('div');
-                monthWrapper.className = 'month-view-container';
+            // STACKING ENGINE
+            let overlay = document.createElement('div');
+            overlay.className = 'continuous-banner-overlay';
+            let trackOccupancy = {}; 
+
+            hardcodedEvents.filter(e => e.type === 'evt-banner').forEach(e => {
+                let sRow = Math.floor((e.startDay-1)/7) + 2;
+                let eRow = Math.floor((e.endDay-1)/7) + 2;
                 
-                let gridHTML = `<div class="month-grid">${['S','M','T','W','T','F','S'].map(d => `<div class="day-header">${d}</div>`).join('')}`;
-                for(let i=0; i<5; i++) gridHTML += `<div class="grid-cell other-month"></div>`;
-                
-                for(let d=1; d<=31; d++) {
-                    let events = hardcodedEvents.filter(e => e.day === d && e.type !== 'evt-banner');
-                    gridHTML += `<div class="grid-cell ${d===19?'today':''}" onclick="setDisplayMode('day', ${d})">
-                                    <span class="cell-number">${d}</span>
-                                    <div class="cell-events-bucket">${events.map(e => `<div class="micro-event ${e.type}">${e.title}</div>`).join('')}</div>
-                                 </div>`;
+                for(let r=sRow; r<=eRow; r++) {
+                    if(!trackOccupancy[r]) trackOccupancy[r] = [];
+                    let t = 0; while(trackOccupancy[r][t]) t++;
+                    trackOccupancy[r][t] = true;
+                    
+                    let item = document.createElement('div');
+                    item.className = 'continuous-banner-item';
+                    item.style.gridRow = r;
+                    item.style.gridColumn = `${((e.startDay-1)%7)+1} / ${((e.endDay-1)%7)+2}`;
+                    item.style.marginTop = (t * 18 + 5) + 'px'; 
+                    item.innerText = e.title;
+                    item.onclick = () => openEventDetail(e);
+                    overlay.appendChild(item);
                 }
-                for(let i=0; i<6; i++) gridHTML += `<div class="grid-cell other-month"></div>`;
-                gridHTML += '</div>';
+            });
+            container.appendChild(overlay);
+        }
 
-                var overlayHTML = '<div class="continuous-banner-overlay">';
-                let trackOccupancy = {};
-                hardcodedEvents.filter(e => e.type === 'evt-banner').forEach(e => {
-                    let start = 5 + e.startDay, end = 5 + e.endDay;
-                    let sRow = Math.floor((start-1)/7) + 2, eRow = Math.floor((end-1)/7) + 2;
-                    for(let r=sRow; r<=eRow; r++) {
-                        if(!trackOccupancy[r]) trackOccupancy[r] = [];
-                        let track = 0; while(trackOccupancy[r][track]) track++;
-                        trackOccupancy[r][track] = true;
-                        let sCol = ((start-1)%
+        function openEventDetail(e) {
+            document.getElementById('modal-event-title').innerText = e.title;
+            document.getElementById('detail-modal').classList.add('active');
+        }
+
+        function closeEventDetail() { document.getElementById('detail-modal').classList.remove('active'); }
+        function toggleView(id) { document.querySelectorAll('.view-pane').forEach(p => p.classList.toggle('hidden', p.id !== id)); }
+        
+        window.onload = updateCalendarUI;
+    </script>
+</body>
+</html>
