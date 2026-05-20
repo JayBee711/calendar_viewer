@@ -137,13 +137,33 @@
             -webkit-overflow-scrolling: touch;
         }
 
+        /* Day View Container Setup to detect backdrop clicks */
+        .day-view-container {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .day-backdrop-filler {
+            flex: 1;
+            min-height: 100px;
+            cursor: pointer;
+        }
+
         .event-card {
             background-color: var(--card-bg);
             border-left: 4px solid var(--accent);
             padding: 14px;
             border-radius: 0 12px 12px 0;
             margin-bottom: 12px;
+            cursor: pointer;
+            transition: transform 0.1s ease;
         }
+        
+        .event-card:active {
+            transform: scale(0.98);
+        }
+
         .event-title { font-size: calc(1.1rem * var(--text-scale)); font-weight: 600; margin: 0 0 4px 0; }
         .event-time { font-size: calc(0.9rem * var(--text-scale)); color: var(--text-muted); margin: 0; }
         
@@ -240,6 +260,74 @@
         }
 
         .settings-content { padding: 0 16px; }
+
+        /* Modal Overlay Detail Drawer Styling */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.75);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-card {
+            background-color: #1c1c1e;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            width: 100%;
+            max-width: 400px;
+            padding: 20px;
+            box-sizing: border-box;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            transform: scale(0.9);
+            transition: transform 0.2s ease;
+        }
+
+        .modal-overlay.active .modal-card {
+            transform: scale(1);
+        }
+
+        .modal-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin: 0 0 12px 0;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 8px;
+        }
+
+        .modal-field {
+            margin-bottom: 14px;
+        }
+
+        .modal-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            letter-spacing: 0.5px;
+            margin-bottom: 3px;
+        }
+
+        .modal-value {
+            font-size: 1rem;
+            color: var(--text-main);
+            margin: 0;
+            line-height: 1.4;
+        }
     </style>
 </head>
 <body>
@@ -283,6 +371,29 @@
         </div>
     </div>
 
+    <div id="detail-modal" class="modal-overlay" onclick="closeEventDetail()">
+        <div class="modal-card" onclick="event.stopPropagation()">
+            <h2 id="modal-event-title" class="modal-title">Event Details</h2>
+            
+            <div class="modal-field">
+                <div class="modal-label">Time</div>
+                <p id="modal-event-time" class="modal-value">-</p>
+            </div>
+            
+            <div class="modal-field">
+                <div class="modal-label">Location</div>
+                <p id="modal-event-location" class="modal-value">Not Specified</p>
+            </div>
+            
+            <div class="modal-field">
+                <div class="modal-label">Notes / Description</div>
+                <p id="modal-event-desc" class="modal-value">-</p>
+            </div>
+
+            <button class="icon-btn" style="width:100%; background-color:var(--card-bg); border:1px solid var(--border); color:var(--accent); padding:10px; border-radius:8px; margin-top:10px; font-size:0.95rem;" onclick="closeEventDetail()">Close</button>
+        </div>
+    </div>
+
     <script>
         var currentMode = 'month';
         var selectedDay = 19; 
@@ -294,41 +405,41 @@
         var scaleLabels = ["A+", "A++", "A-"];
 
         var hardcodedEvents = [
-            { day: 1, title: 'Game', type: 'evt-game', time: '5:30 PM', desc: 'Away Game Schedule Matchup' },
-            { day: 1, title: 'Visitors coming', type: 'evt-banner', time: 'All Day', desc: 'Guest arrival log tracking' },
-            { day: 2, title: 'Games', type: 'evt-game', time: '12:00 PM', desc: 'Double Header Tournament Play' },
-            { day: 3, title: 'Visitors coming', type: 'evt-banner', time: 'All Day', desc: 'Family Weekend Gathering' },
-            { day: 4, title: 'Game', type: 'evt-game', time: '6:00 PM', desc: 'Regular Season Divisional Match' },
-            { day: 5, title: 'Cinco de Mayo', type: 'evt-special', time: 'All Day', desc: 'Holiday Commemoration' },
-            { day: 5, title: 'Game', type: 'evt-game', time: '5:30 PM', desc: 'Evening Stadium Set' },
-            { day: 6, title: 'Practice (White)', type: 'evt-practice', time: '4:00 PM', desc: 'Team field run - wear default white gear set' },
-            { day: 7, title: 'Game', type: 'evt-game', time: '7:00 PM', desc: 'Under the lights track match' },
-            { day: 8, title: 'Game', type: 'evt-game', time: '5:30 PM', desc: 'Home game conference opener' },
-            { day: 9, title: 'Games', type: 'evt-game', time: '9:00 AM', desc: 'Morning session bracket listings' },
-            { day: 9, title: 'To Smiths', type: 'evt-personal', time: '4:30 PM', desc: 'Travel run route out to Smith household' },
-            { day: 10, title: "Mother's Day", type: 'evt-special', time: 'All Day', desc: 'Brunch events booking setup' },
-            { day: 12, title: 'Game', type: 'evt-game', time: '6:00 PM', desc: 'Away League Meet' },
-            { day: 14, title: 'Game', type: 'evt-game', time: '5:30 PM', desc: 'Home field stadium series match' },
-            { day: 14, title: 'Jim Dietician', type: 'evt-medical-alt', time: '1:15 PM', desc: 'Nutritional wellness progress assessment' },
-            { day: 15, title: 'Game', type: 'evt-game', time: '6:30 PM', desc: 'Weekend qualifier tournament kickoff' },
-            { day: 16, title: 'Tom Birthday', type: 'evt-medical-alt', time: 'All Day', desc: 'Celebration log day coordinate' },
-            { day: 17, title: 'Mom coming', type: 'evt-banner', time: 'All Day', desc: 'Mom arrives timeline tracking block' },
-            { day: 18, title: 'Mom coming', type: 'evt-banner', time: 'All Day', desc: 'Family timeline layout log' },
-            { day: 18, title: 'Game', type: 'evt-game', time: '5:30 PM', desc: 'Championship bracket qualifier match' },
-            { day: 19, title: 'Mom coming', type: 'evt-banner', time: 'All Day', desc: 'Today - Dinner plans and city visit agenda' },
-            { day: 20, title: 'Mom coming', type: 'evt-banner', time: 'All Day', desc: 'Midweek exploration schedule' },
-            { day: 20, title: 'White vs. Blue', type: 'evt-practice', time: '6:00 PM', desc: 'Intra-squad club showcase scrimmage' },
-            { day: 21, title: 'Mom coming', type: 'evt-banner', time: 'All Day', desc: 'Mom airport departure timeline run' },
-            { day: 21, title: 'Game', type: 'evt-game', time: '5:30 PM', desc: 'Summer preliminary trial match' },
-            { day: 21, title: 'Jim Colon', type: 'evt-personal', time: '7:00 AM', desc: 'Outpatient clinic arrival registration checkpoint' },
-            { day: 22, title: 'Jane Vacation', type: 'evt-special', time: 'All Day', desc: 'Out of office calendar holiday holdout' },
-            { day: 24, title: 'Mom coming', type: 'evt-banner', time: 'All Day', desc: 'Extended family timeline weekend log' },
-            { day: 25, title: 'Mom coming', type: 'evt-banner', time: 'All Day', desc: 'Holiday collection route' },
-            { day: 25, title: 'Memorial Day', type: 'evt-special', time: 'All Day', desc: 'National Holiday - Office Closed' },
-            { day: 26, title: 'Game', type: 'evt-game', time: '6:00 PM', desc: 'Evening club series trial' },
-            { day: 27, title: 'Game', type: 'evt-game', time: '5:30 PM', desc: 'Midweek division match' },
-            { day: 29, title: 'Games', type: 'evt-game', time: '4:00 PM', desc: 'Pre-weekend open schedule tournament sets' },
-            { day: 31, title: 'Mom coming', type: 'evt-banner', time: 'All Day', desc: 'Closing calendar block calculation verification' }
+            { id: 1, day: 1, title: 'Game', type: 'evt-game', time: '5:30 PM', location: 'Stacy Memorial Ice Rink', desc: 'Away Game Schedule Matchup. Wear away jersey sets.' },
+            { id: 2, day: 1, title: 'Visitors coming', type: 'evt-banner', time: 'All Day', location: 'Home', desc: 'Guest arrival log tracking. Check room arrangements.' },
+            { id: 3, day: 2, title: 'Games', type: 'evt-game', time: '12:00 PM', location: 'Civic Arena Complex', desc: 'Double Header Tournament Play. Bring extra tape and provisions.' },
+            { id: 4, day: 3, title: 'Visitors coming', type: 'evt-banner', time: 'All Day', location: 'Home', desc: 'Family Weekend Gathering and backyard setup.' },
+            { id: 5, day: 4, title: 'Game', type: 'evt-game', time: '6:00 PM', desc: 'Regular Season Divisional Match' },
+            { id: 6, day: 5, title: 'Cinco de Mayo', type: 'evt-special', time: 'All Day', desc: 'Holiday Commemoration' },
+            { id: 7, day: 5, title: 'Game', type: 'evt-game', time: '5:30 PM', desc: 'Evening Stadium Set' },
+            { id: 8, day: 6, title: 'Practice (White)', type: 'evt-practice', time: '4:00 PM', location: 'Main Training Rink', desc: 'Team field run - wear default white gear set' },
+            { id: 9, day: 7, title: 'Game', type: 'evt-game', time: '7:00 PM', desc: 'Under the lights track match' },
+            { id: 10, day: 8, title: 'Game', type: 'evt-game', time: '5:30 PM', desc: 'Home game conference opener' },
+            { id: 11, day: 9, title: 'Games', type: 'evt-game', time: '9:00 AM', desc: 'Morning session bracket listings' },
+            { id: 12, day: 9, title: 'To Smiths', type: 'evt-personal', time: '4:30 PM', desc: 'Travel run route out to Smith household' },
+            { id: 13, day: 10, title: "Mother's Day", type: 'evt-special', time: 'All Day', location: 'Grand Bistro Cafe', desc: 'Brunch events booking setup. Reserved under Jay.' },
+            { id: 14, day: 12, title: 'Game', type: 'evt-game', time: '6:00 PM', desc: 'Away League Meet' },
+            { id: 15, day: 14, title: 'Game', type: 'evt-game', time: '5:30 PM', desc: 'Home field stadium series match' },
+            { id: 16, day: 14, title: 'Jim Dietician', type: 'evt-medical-alt', time: '1:15 PM', location: 'Wellness Annex Room 3B', desc: 'Nutritional wellness progress assessment and macro-tracking log sync.' },
+            { id: 17, day: 15, title: 'Game', type: 'evt-game', time: '6:30 PM', desc: 'Weekend qualifier tournament kickoff' },
+            { id: 18, day: 16, title: 'Tom Birthday', type: 'evt-medical-alt', time: 'All Day', desc: 'Celebration log day coordinate' },
+            { id: 19, day: 17, title: 'Mom coming', type: 'evt-banner', time: 'All Day', desc: 'Mom arrives timeline tracking block' },
+            { id: 20, day: 18, title: 'Mom coming', type: 'evt-banner', time: 'All Day', desc: 'Family timeline layout log' },
+            { id: 21, day: 18, title: 'Game', type: 'evt-game', time: '5:30 PM', desc: 'Championship bracket qualifier match' },
+            { id: 22, day: 19, title: 'Mom coming', type: 'evt-banner', time: 'All Day', location: 'Metro Airport Terminal 2', desc: 'Today - Dinner plans and city visit agenda' },
+            { id: 23, day: 20, title: 'Mom coming', type: 'evt-banner', time: 'All Day', desc: 'Midweek exploration schedule' },
+            { id: 24, day: 20, title: 'White vs. Blue', type: 'evt-practice', time: '6:00 PM', desc: 'Intra-squad club showcase scrimmage' },
+            { id: 25, day: 21, title: 'Mom coming', type: 'evt-banner', time: 'All Day', desc: 'Mom airport departure timeline run' },
+            { id: 26, day: 21, title: 'Game', type: 'evt-game', time: '5:30 PM', desc: 'Summer preliminary trial match' },
+            { id: 27, day: 21, title: 'Jim Colon', type: 'evt-personal', time: '7:00 AM', location: 'Outpatient Clinic Desk A', desc: 'Outpatient clinic arrival registration checkpoint. fasting protocol active.' },
+            { id: 28, day: 22, title: 'Jane Vacation', type: 'evt-special', time: 'All Day', desc: 'Out of office calendar holiday holdout' },
+            { id: 29, day: 24, title: 'Mom coming', type: 'evt-banner', time: 'All Day', desc: 'Extended family timeline weekend log' },
+            { id: 30, day: 25, title: 'Mom coming', type: 'evt-banner', time: 'All Day', desc: 'Holiday collection route' },
+            { id: 31, day: 25, title: 'Memorial Day', type: 'evt-special', time: 'All Day', desc: 'National Holiday - Office Closed' },
+            { id: 32, day: 26, title: 'Game', type: 'evt-game', time: '6:00 PM', desc: 'Evening club series trial' },
+            { id: 33, day: 27, title: 'Game', type: 'evt-game', time: '5:30 PM', desc: 'Midweek division match' },
+            { id: 34, day: 29, title: 'Games', type: 'evt-game', time: '4:00 PM', desc: 'Pre-weekend open schedule tournament sets' },
+            { id: 35, day: 31, title: 'Mom coming', type: 'evt-banner', time: 'All Day', desc: 'Closing calendar block calculation verification' }
         ];
 
         function cycleTextScale() {
@@ -373,6 +484,30 @@
                 var options = { weekday: 'long', month: 'short', day: 'numeric' };
                 heading.innerText = activeDate.toLocaleDateString('en-US', options);
             }
+        }
+
+        // Trigger detail sheet overlay
+        function openEventDetail(eventId, eventObj) {
+            // Prevent event from bubbling out to background trigger containers
+            if (eventObj) eventObj.stopPropagation();
+            
+            var targetEvent = hardcodedEvents.find(function(e) { return e.id === eventId; });
+            if (!targetEvent) return;
+
+            document.getElementById('modal-event-title').innerText = targetEvent.title;
+            document.getElementById('modal-event-time').innerText = targetEvent.time;
+            document.getElementById('modal-event-location').innerText = targetEvent.location || 'Not Specified';
+            document.getElementById('modal-event-desc').innerText = targetEvent.desc || 'No descriptions provided.';
+            
+            document.getElementById('detail-modal').classList.add('active');
+        }
+
+        function closeEventDetail() {
+            document.getElementById('detail-modal').classList.remove('active');
+        }
+
+        function handleDayBackdropClick() {
+            setDisplayMode('month');
         }
 
         function saveFeeds() {
@@ -420,10 +555,14 @@
 
             if (currentMode === 'day') {
                 var dayEvents = hardcodedEvents.filter(function(e) { return e.day === selectedDay; });
-                var dayHTML = '<div class="scrollable-content" style="padding-top:10px;">';
+                
+                // Wrap content in interactive layout layer container
+                var dayHTML = '<div class="day-view-container" onclick="handleDayBackdropClick()">' +
+                                '<div class="scrollable-content" style="padding-top:10px;" onclick="event.stopPropagation()">';
                 
                 if (dayEvents.length === 0) {
-                    dayHTML += '<p style="text-align:center; color:var(--text-muted); margin-top:40px;">No events scheduled for this day.</p>';
+                    dayHTML += '<p style="text-align:center; color:var(--text-muted); margin-top:40px;">No events scheduled for this day.</p>' +
+                               '<p style="text-align:center; font-size:0.85rem; color:var(--accent);">Tap empty space to return to Month View</p>';
                 } else {
                     dayEvents.forEach(function(e) {
                         var stripeColor = 'var(--accent)';
@@ -432,14 +571,17 @@
                         if (e.type === 'evt-banner') stripeColor = 'var(--cal-yellow-text)';
                         if (e.type === 'evt-medical-alt') stripeColor = 'var(--cal-yellow-text)';
                         
-                        dayHTML += '<div class="event-card" style="border-left-color: ' + stripeColor + ';">' +
+                        dayHTML += '<div class="event-card" style="border-left-color: ' + stripeColor + ';" onclick="openEventDetail(' + e.id + ', event)">' +
                                 '<p class="event-title">' + e.title + '</p>' +
                                 '<p class="event-time" style="color:var(--text-main); font-weight:600; margin-bottom:6px;">' + e.time + '</p>' +
-                                '<p class="event-time" style="font-size:0.88rem; line-height:1.3;">' + e.desc + '</p>' +
+                                '<p class="event-time" style="font-size:0.88rem; line-height:1.3; opacity:0.85;">' + (e.location ? '📍 ' + e.location : 'Tap for details') + '</p>' +
                             '</div>';
                     });
                 }
-                dayHTML += '</div>';
+                dayHTML += '</div>' + 
+                           '<div class="day-backdrop-filler"></div>' + 
+                           '</div>';
+                
                 displayContainer.innerHTML = dayHTML;
             } 
             else if (currentMode === 'week') {
@@ -457,7 +599,7 @@
                         var weekdayHeaderLabel = loopDateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
                         (function(dNum) {
                             var singleDayEvents = hardcodedEvents.filter(function(e) { return e.day === dNum; });
-                            weekHTML += '<div class="week-day-block"><div class="week-day-title">' + weekdayHeaderLabel + '</div>';
+                            weekHTML += '<div class="week-day-block" onclick="setDisplayMode(\'day\', ' + dNum + ')"><div class="week-day-title">' + weekdayHeaderLabel + '</div>';
                             
                             if (singleDayEvents.length === 0) {
                                 weekHTML += '<p style="font-size:0.85rem; color:var(--text-muted); margin:0 0 12px 4px;">No events</p>';
@@ -469,7 +611,7 @@
                                     if (e.type === 'evt-banner') borderCol = 'var(--cal-yellow-text)';
                                     if (e.type === 'evt-medical-alt') borderCol = 'var(--cal-yellow-text)';
                                     
-                                    weekHTML += '<div class="event-card" style="border-left-color: ' + borderCol + '; padding:10px 12px; margin-bottom:8px;">' +
+                                    weekHTML += '<div class="event-card" style="border-left-color: ' + borderCol + '; padding:10px 12px; margin-bottom:8px;" onclick="openEventDetail(' + e.id + ', event)">' +
                                             '<p class="event-title" style="font-size:1rem; margin-bottom:2px;">' + e.title + '</p>' +
                                             '<p class="event-time">' + e.time + '</p>' +
                                         '</div>';
@@ -511,6 +653,7 @@
                             innerEventsHTML += '<div class="' + dynamicClass + '" style="' + inlineStyles + '">' + e.title + '</div>';
                         });
                         
+                        // Modified to directly open Day View instead of just highlighting a cell
                         gridHTML += '<div class="grid-cell ' + isTodayStyle + '" onclick="setDisplayMode(\'day\', ' + dNum + ')">' +
                                 '<span class="cell-number">' + dNum + '</span>' +
                                 innerEventsHTML +
