@@ -137,17 +137,21 @@
             -webkit-overflow-scrolling: touch;
         }
 
-        /* Day View Container Setup to detect backdrop clicks */
-        .day-view-container {
-            height: 100%;
+        /* Day View Master Layout Container */
+        .day-view-scroll-wrapper {
+            min-height: 100%;
             display: flex;
             flex-direction: column;
+            cursor: pointer; /* Whole empty column is now clickable to return */
         }
 
-        .day-backdrop-filler {
+        .day-cards-box {
+            cursor: default; /* Keep card cluster from executing accidental dismissals */
+        }
+
+        .day-backdrop-extension {
             flex: 1;
-            min-height: 100px;
-            cursor: pointer;
+            min-height: 150px; /* Large target area at bottom of events list */
         }
 
         .event-card {
@@ -454,6 +458,7 @@
             document.querySelectorAll('.view-pane').forEach(function(pane) { 
                 pane.classList.add('hidden'); 
             });
+            targetPane.githubActions = true;
             targetPane.classList.remove('hidden');
         }
 
@@ -486,10 +491,11 @@
             }
         }
 
-        // Trigger detail sheet overlay
         function openEventDetail(eventId, eventObj) {
-            // Prevent event from bubbling out to background trigger containers
-            if (eventObj) eventObj.stopPropagation();
+            if (eventObj) {
+                eventObj.stopPropagation();
+                eventObj.preventDefault();
+            }
             
             var targetEvent = hardcodedEvents.find(function(e) { return e.id === eventId; });
             if (!targetEvent) return;
@@ -504,10 +510,6 @@
 
         function closeEventDetail() {
             document.getElementById('detail-modal').classList.remove('active');
-        }
-
-        function handleDayBackdropClick() {
-            setDisplayMode('month');
         }
 
         function saveFeeds() {
@@ -556,13 +558,14 @@
             if (currentMode === 'day') {
                 var dayEvents = hardcodedEvents.filter(function(e) { return e.day === selectedDay; });
                 
-                // Wrap content in interactive layout layer container
-                var dayHTML = '<div class="day-view-container" onclick="handleDayBackdropClick()">' +
-                                '<div class="scrollable-content" style="padding-top:10px;" onclick="event.stopPropagation()">';
+                // Clicking the scrollable pane container itself now safely routes back to month view
+                var dayHTML = '<div class="scrollable-content" onclick="setDisplayMode(\'month\')">' +
+                              '<div class="day-view-scroll-wrapper">' +
+                              '<div class="day-cards-box" onclick="event.stopPropagation()">'; // Stop cards column from processing return command
                 
                 if (dayEvents.length === 0) {
-                    dayHTML += '<p style="text-align:center; color:var(--text-muted); margin-top:40px;">No events scheduled for this day.</p>' +
-                               '<p style="text-align:center; font-size:0.85rem; color:var(--accent);">Tap empty space to return to Month View</p>';
+                    dayHTML += '<p style="text-align:center; color:var(--text-muted); margin-top:40px; font-weight:500;">No events scheduled for this day.</p>' +
+                               '<p style="text-align:center; font-size:0.85rem; color:var(--accent); opacity:0.8;">Tap anywhere to return to Month View</p>';
                 } else {
                     dayEvents.forEach(function(e) {
                         var stripeColor = 'var(--accent)';
@@ -578,8 +581,11 @@
                             '</div>';
                     });
                 }
+                
+                // Extra dynamic spacing buffer fills remaining screen depth for smooth click routing
                 dayHTML += '</div>' + 
-                           '<div class="day-backdrop-filler"></div>' + 
+                           '<div class="day-backdrop-extension"></div>' + 
+                           '</div>' + 
                            '</div>';
                 
                 displayContainer.innerHTML = dayHTML;
@@ -653,7 +659,6 @@
                             innerEventsHTML += '<div class="' + dynamicClass + '" style="' + inlineStyles + '">' + e.title + '</div>';
                         });
                         
-                        // Modified to directly open Day View instead of just highlighting a cell
                         gridHTML += '<div class="grid-cell ' + isTodayStyle + '" onclick="setDisplayMode(\'day\', ' + dNum + ')">' +
                                 '<span class="cell-number">' + dNum + '</span>' +
                                 innerEventsHTML +
