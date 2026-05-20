@@ -622,25 +622,21 @@
         }
 
         function updateCalendarUI() {
-function updateCalendarUI() {
             var displayContainer = document.getElementById('calendar-display');
             if (!displayContainer) return;
-
+            
             displayContainer.innerHTML = ''; 
 
             if (currentMode === 'day') {
-                // ... (Existing Day View code remains identical)
                 var dayEvents = hardcodedEvents.filter(function(e) { return isEventOnDay(e, selectedDay); });
                 
                 var dayHTML = '<div class="scrollable-content" onclick="setDisplayMode(\'month\')">' +
                               '<div class="day-view-scroll-wrapper">' +
                               '<div class="day-cards-box" onclick="event.stopPropagation()">';
-                              '<div class="day-view-scroll-wrapper"><div class="day-cards-box" onclick="event.stopPropagation()">';
-
+                
                 if (dayEvents.length === 0) {
                     dayHTML += '<p style="text-align:center; color:var(--text-muted); margin-top:40px; font-weight:500;">No events scheduled for this day.</p>' +
                                '<p style="text-align:center; font-size:0.85rem; color:var(--accent); opacity:0.8;">Tap anywhere to return to Month View</p>';
-                    dayHTML += '<p style="text-align:center; color:var(--text-muted); margin-top:40px; font-weight:500;">No events scheduled for this day.</p>';
                 } else {
                     dayEvents.forEach(function(e) {
                         var stripeColor = 'var(--accent)';
@@ -649,11 +645,12 @@ function updateCalendarUI() {
                         else if (e.type === 'evt-banner') stripeColor = 'var(--cal-yellow-text)';
                         else if (e.type === 'evt-medical-alt') stripeColor = 'var(--cal-yellow-text)';
                         else if (e.type === 'evt-practice') stripeColor = 'var(--text-muted)';
-                        else if (e.type === 'evt-practice') stripeColor = '--text-muted';
                         else if (e.type === 'evt-personal') stripeColor = '#ffffff';
-
+                        
                         dayHTML += '<div class="event-card" style="border-left-color: ' + stripeColor + ';" onclick="openEventDetail(' + e.id + ', event)">' +
-@@ -654,47 +29,29 @@ <h2 id="modal-event-title" class="modal-title">Event Details</h2>
+                                '<p class="event-title">' + e.title + '</p>' +
+                                '<p class="event-time" style="color:var(--text-main); font-weight:600; margin-bottom:6px;">' + e.time + '</p>' +
+                                '<p class="event-time" style="font-size:0.88rem; line-height:1.3; opacity:0.85;">' + (e.location ? '📍 ' + e.location : 'Tap for details') + '</p>' +
                             '</div>';
                     });
                 }
@@ -663,11 +660,9 @@ function updateCalendarUI() {
                            '</div>' + 
                            '</div>';
                 
-                dayHTML += '</div><div class="day-backdrop-extension"></div></div></div>';
                 displayContainer.innerHTML = dayHTML;
             } 
             else if (currentMode === 'week') {
-                // ... (Existing Week View code remains identical)
                 var targetDateObj = new Date(anchorYear, anchorMonth, selectedDay);
                 var dayOfWeekIndex = targetDateObj.getDay(); 
                 var startSundayDayNum = selectedDay - dayOfWeekIndex;
@@ -687,8 +682,6 @@ function updateCalendarUI() {
                             if (singleDayEvents.length === 0) {
                                 weekHTML += '<p style="font-size:0.85rem; color:var(--text-muted); margin:0 0 12px 4px;">No events</p>';
                             } else {
-                            if (singleDayEvents.length === 0) weekHTML += '<p style="font-size:0.85rem; color:var(--text-muted); margin:0 0 12px 4px;">No events</p>';
-                            else {
                                 singleDayEvents.forEach(function(e) {
                                     var borderCol = 'var(--accent)';
                                     if (e.type === 'evt-game') borderCol = 'var(--cal-orange-text)';
@@ -699,34 +692,32 @@ function updateCalendarUI() {
                                     else if (e.type === 'evt-personal') borderCol = '#ffffff';
                                     
                                     weekHTML += '<div class="event-card" style="border-left-color: ' + borderCol + '; padding:10px 12px; margin-bottom:8px;" onclick="openEventDetail(' + e.id + ', event)">' +
-                                    weekHTML += '<div class="event-card" style="padding:10px 12px; margin-bottom:8px;" onclick="openEventDetail(' + e.id + ', event)">' +
                                             '<p class="event-title" style="font-size:1rem; margin-bottom:2px;">' + e.title + '</p>' +
                                             '<p class="event-time">' + e.time + '</p>' +
                                         '</div>';
-                                            '<p class="event-time">' + e.time + '</p></div>';
                                 });
                             }
                             weekHTML += '</div>';
-@@ -703,7 +60,7 @@ <h2 id="modal-event-title" class="modal-title">Event Details</h2>
+                        })(loopDayNum);
+                    }
                 }
                 weekHTML += '</div>';
                 displayContainer.innerHTML = weekHTML;
             } 
-            }
             else if (currentMode === 'month') {
                 var monthWrapper = document.createElement('div');
                 monthWrapper.className = 'month-view-container';
-@@ -712,101 +69,60 @@ <h2 id="modal-event-title" class="modal-title">Event Details</h2>
+
+                var gridHTML = '<div class="month-grid">' +
                         '<div class="day-header">S</div><div class="day-header">M</div><div class="day-header">T</div>' +
                         '<div class="day-header">W</div><div class="day-header">T</div><div class="day-header">F</div><div class="day-header">S</div>';
-
+                
                 // May 2026 starts on Friday, so 5 empty cells precede it
                 var emptyOffsetCells = 5;
                 for (var i = 0; i < emptyOffsetCells; i++) {
                     gridHTML += '<div class="grid-cell other-month"></div>';
                 }
-                for (var i = 0; i < emptyOffsetCells; i++) gridHTML += '<div class="grid-cell other-month"></div>';
-
+                
                 for (var d = 1; d <= 31; d++) {
                     var isTodayStyle = (d === 19) ? 'today' : '';
                     var innerEventsHTML = '';
@@ -754,12 +745,6 @@ function updateCalendarUI() {
                                 '<span class="cell-number">' + dNum + '</span>' +
                                 '<div class="cell-events-bucket">' + innerEventsHTML + '</div>' +
                             '</div>';
-                        var matchedCellEvents = hardcodedEvents.filter(function(e) { return e.day === dNum && e.type !== 'evt-banner'; });
-                        var innerEventsHTML = matchedCellEvents.map(e => `<div class="micro-event ${e.type}">${e.title}</div>`).join('');
-                        gridHTML += `<div class="grid-cell ${isTodayStyle}" onclick="setDisplayMode('day', ${dNum})">
-                                        <span class="cell-number">${dNum}</span>
-                                        <div class="cell-events-bucket">${innerEventsHTML}</div>
-                                     </div>`;
                     })(d);
                 }
                 
@@ -768,44 +753,24 @@ function updateCalendarUI() {
                     gridHTML += '<div class="grid-cell other-month"></div>';
                 }
                 gridHTML += '</div>'; // End Grid
-                for (var i = 0; i < 6; i++) gridHTML += '<div class="grid-cell other-month"></div>';
-                gridHTML += '</div>';
 
                 // Generate Continuous Overlay Track Layouts
                 var overlayHTML = '<div class="continuous-banner-overlay">' +
                                   '<div style="grid-column: span 7; height: 0;"></div>'; /* Header spacing element matching day row */
                 
-                // --- VERTICAL STACKING ENGINE ---
-                var overlayHTML = '<div class="continuous-banner-overlay">';
                 var multiDayBanners = hardcodedEvents.filter(function(e) { return e.type === 'evt-banner'; });
-
-                // Track occupancy: trackOccupancy[weekRow][trackIndex] = boolean
-                var trackOccupancy = {}; 
-
+                
                 multiDayBanners.forEach(function(e) {
                     var totalStartCellIndex = emptyOffsetCells + e.startDay; 
                     var totalEndCellIndex = emptyOffsetCells + e.endDay; 
                     
                     var startingRow = Math.floor((totalStartCellIndex - 1) / 7) + 2; 
                     var endingRow = Math.floor((totalEndCellIndex - 1) / 7) + 2; 
-                    var totalStart = emptyOffsetCells + e.startDay;
-                    var totalEnd = emptyOffsetCells + e.endDay;
-                    var startingRow = Math.floor((totalStart - 1) / 7) + 2;
-                    var endingRow = Math.floor((totalEnd - 1) / 7) + 2;
 
                     for (var r = startingRow; r <= endingRow; r++) {
-                        if (!trackOccupancy[r]) trackOccupancy[r] = [];
-                        
-                        // Find first available vertical track (row offset inside the grid cell)
-                        var trackIndex = 0;
-                        while (trackOccupancy[r][trackIndex]) trackIndex++;
-                        trackOccupancy[r][trackIndex] = true;
-
                         var currentWeekRowStart = (r - 2) * 7 + 1;
                         var currentWeekRowEnd = currentWeekRowStart + 6;
-                        var relativeStart = Math.max(totalStart, currentWeekRowStart);
-                        var relativeEnd = Math.min(totalEnd, currentWeekRowEnd);
-
+                        
                         var relativeStartColumn = Math.max(totalStartCellIndex, currentWeekRowStart);
                         var relativeEndColumn = Math.min(totalEndCellIndex, currentWeekRowEnd);
                         
@@ -819,18 +784,11 @@ function updateCalendarUI() {
                                        'onclick="openEventDetail(' + e.id + ', event)">' +
                                        e.title +
                                        '</div>';
-                        overlayHTML += `<div class="continuous-banner-item" style="
-                                        grid-row-start: ${r}; 
-                                        grid-column-start: ${((relativeStart - 1) % 7) + 1}; 
-                                        grid-column-end: ${((relativeEnd - 1) % 7) + 2};
-                                        margin-top: ${trackIndex * 20 + 20}px;" 
-                                        onclick="openEventDetail(${e.id}, event)">${e.title}</div>`;
                     }
                 });
-
+                
                 overlayHTML += '</div>'; // End Overlay Tracking Matrix Container
                 
-                overlayHTML += '</div>';
                 monthWrapper.innerHTML = gridHTML + overlayHTML;
                 displayContainer.appendChild(monthWrapper);
             }
