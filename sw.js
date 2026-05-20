@@ -1,10 +1,9 @@
-const CACHE_NAME = 'cal-viewer-v2';
+const CACHE_NAME = 'cal-viewer-v3';
 const ASSETS = [
-  './index.html?v=2.0',
+  './index.html',
   './manifest.json'
 ];
 
-// Self-destruct old worker routines immediately
 self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
@@ -23,7 +22,6 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch directly from live web instead of caching static layers
 self.addEventListener('fetch', (event) => {
   event.respondWith(
     fetch(event.request).catch(() => {
