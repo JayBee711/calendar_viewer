@@ -276,7 +276,10 @@
             <label style="display:block; font-size:0.85rem; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;" for="calendar-url">Calendar iCal / Webcal URL</label>
             <input type="url" id="calendar-url" placeholder="Paste link here (https://... or webcal://...)" style="width:100%; background-color:var(--card-bg); border:1px solid var(--border); color:var(--text-main); padding:12px; border-radius:10px; font-size:1rem; box-sizing:border-box; margin-bottom:15px; outline:none;">
 
-            <button class="icon-btn" style="width:100%; background-color:var(--accent); color:#fff; padding:14px; border-radius:12px; font-size:1rem;" onclick="saveFeeds()">Save & Refresh</button>
+            <button class="icon-btn" style="width:100%; background-color:var(--accent); color:#fff; padding:14px; border-radius:12px; font-size:1rem; margin-bottom:30px;" onclick="saveFeeds()">Save & Refresh</button>
+            
+            <hr style="border:0; border-top:1px solid var(--border); margin-bottom:20px;">
+            <button class="icon-btn" style="color:#ff453a; font-size:0.9rem;" onclick="clearAppCache()">Force Clear App Cache</button>
         </div>
     </div>
 
@@ -286,8 +289,7 @@
         const anchorYear = 2026;
         const anchorMonth = 4; // May (0-indexed)
         
-        // Font scaling level tracker
-        let textScaleLevel = 0; // 0 = Normal, 1 = Large, 2 = Extra Large
+        let textScaleLevel = 0; 
         const scaleValues = [1.0, 1.25, 1.5];
         const scaleLabels = ["A+", "A++", "A-"];
 
@@ -313,23 +315,4 @@
             { day: 17, title: 'Mom coming', type: 'evt-banner', time: 'All Day', desc: 'Mom arrives timeline tracking block' },
             { day: 18, title: 'Mom coming', type: 'evt-banner', time: 'All Day', desc: 'Family timeline layout log' },
             { day: 18, title: 'Game', type: 'evt-game', time: '5:30 PM', desc: 'Championship bracket qualifier match' },
-            { day: 19, title: 'Mom coming', type: 'evt-banner', time: 'All Day', desc: 'Today - Dinner plans and city visit agenda' },
-            { day: 20, title: 'Mom coming', type: 'evt-banner', time: 'All Day', desc: 'Midweek exploration schedule' },
-            { day: 20, title: 'White vs. Blue', type: 'evt-practice', time: '6:00 PM', desc: 'Intra-squad club showcase scrimmage' },
-            { day: 21, title: 'Mom coming', type: 'evt-banner', time: 'All Day', desc: 'Mom airport departure timeline run' },
-            { day: 21, title: 'Game', type: 'evt-game', time: '5:30 PM', desc: 'Summer preliminary trial match' },
-            { day: 21, title: 'Jim Colon', type: 'evt-personal', time: '7:00 AM', desc: 'Outpatient clinic arrival registration checkpoint' },
-            { day: 22, title: 'Jane Vacation', type: 'evt-special', time: 'All Day', desc: 'Out of office calendar holiday holdout' },
-            { day: 24, title: 'Mom coming', type: 'evt-banner', time: 'All Day', desc: 'Extended family timeline weekend log' },
-            { day: 25, title: 'Mom coming', type: 'evt-banner', time: 'All Day', desc: 'Holiday collection route' },
-            { day: 25, title: 'Memorial Day', type: 'evt-special', time: 'All Day', desc: 'National Holiday - Office Closed' },
-            { day: 26, title: 'Game', type: 'evt-game', time: '6:00 PM', desc: 'Evening club series trial' },
-            { day: 27, title: 'Game', type: 'evt-game', time: '5:30 PM', desc: 'Midweek division match' },
-            { day: 29, title: 'Games', type: 'evt-game', time: '4:00 PM', desc: 'Pre-weekend open schedule tournament sets' },
-            { day: 31, title: 'Mom coming', type: 'evt-banner', time: 'All Day', desc: 'Closing calendar block calculation verification' }
-        ];
-
-        function cycleTextScale() {
-            textScaleLevel = (textScaleLevel + 1) % scaleValues.length;
-            document.documentElement.style.setProperty('--text-scale', scaleValues[textScaleLevel]);
-            document.getElementById('btn-text-scale').
+            { day: 19, title: 'Mom coming', type: 'evt-banner', time: 'All Day
