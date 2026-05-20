@@ -21,6 +21,9 @@
             --border: #2c2c2e;
             --segment-bg: #111112;
             
+            /* Dynamic Text Scale Factor managed by JS */
+            --text-scale: 1.0;
+            
             /* Custom Calendar Event Colors */
             --cal-orange: rgba(255, 149, 0, 0.3);
             --cal-orange-text: #ff9500;
@@ -60,6 +63,12 @@
         }
 
         h1 { margin: 0; font-size: 1.8rem; font-weight: 700; }
+
+        .header-controls {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
 
         .icon-btn {
             background: none;
@@ -114,7 +123,6 @@
         
         .view-pane.hidden { display: none !important; }
 
-        /* Clean display area without transform matrix overrides */
         #calendar-display {
             flex: 1;
             min-height: 0;
@@ -136,8 +144,8 @@
             border-radius: 0 12px 12px 0;
             margin-bottom: 12px;
         }
-        .event-title { font-size: 1.1rem; font-weight: 600; margin: 0 0 4px 0; }
-        .event-time { font-size: 0.9rem; color: var(--text-muted); margin: 0; }
+        .event-title { font-size: calc(1.1rem * var(--text-scale)); font-weight: 600; margin: 0 0 4px 0; }
+        .event-time { font-size: calc(0.9rem * var(--text-scale)); color: var(--text-muted); margin: 0; }
         
         /* Month Matrix Layout Framework */
         .month-grid {
@@ -179,13 +187,13 @@
         }
         
         .cell-number {
-            font-size: 0.75rem;
+            font-size: calc(0.75rem * var(--text-scale));
             font-weight: 600;
             color: var(--text-muted);
-            width: 16px;
-            height: 16px;
+            width: calc(16px * var(--text-scale));
+            height: calc(16px * var(--text-scale));
             text-align: center;
-            line-height: 16px;
+            line-height: calc(16px * var(--text-scale));
             margin-bottom: 1px;
         }
         
@@ -197,9 +205,9 @@
         
         .grid-cell.other-month { opacity: 0.2; }
 
-        /* Micro Inline Layout Display Tags */
+        /* Micro Inline Layout Display Tags - Scaled Dynamically */
         .micro-event {
-            font-size: 0.62rem;
+            font-size: calc(0.62rem * var(--text-scale));
             font-weight: 500;
             padding: 2px 4px;
             border-radius: 3px;
@@ -223,7 +231,7 @@
         
         .week-day-block { margin-bottom: 20px; }
         .week-day-title {
-            font-size: 0.95rem;
+            font-size: calc(0.95rem * var(--text-scale));
             font-weight: 600;
             color: var(--accent);
             border-bottom: 1px solid var(--border);
@@ -239,7 +247,10 @@
     <div id="agenda-pane" class="view-pane">
         <header>
             <h1 id="current-date-title">May 2026</h1>
-            <button class="icon-btn" onclick="toggleView('settings-pane')">Settings</button>
+            <div class="header-controls">
+                <button id="btn-text-scale" class="icon-btn" onclick="cycleTextScale()">A+</button>
+                <button class="icon-btn" onclick="toggleView('settings-pane')">Settings</button>
+            </div>
         </header>
 
         <div class="segmented-control">
@@ -274,6 +285,11 @@
         let selectedDay = 19; 
         const anchorYear = 2026;
         const anchorMonth = 4; // May (0-indexed)
+        
+        // Font scaling level tracker
+        let textScaleLevel = 0; // 0 = Normal, 1 = Large, 2 = Extra Large
+        const scaleValues = [1.0, 1.25, 1.5];
+        const scaleLabels = ["A+", "A++", "A-"];
 
         const hardcodedEvents = [
             { day: 1, title: 'Game', type: 'evt-game', time: '5:30 PM', desc: 'Away Game Schedule Matchup' },
@@ -312,6 +328,16 @@
             { day: 29, title: 'Games', type: 'evt-game', time: '4:00 PM', desc: 'Pre-weekend open schedule tournament sets' },
             { day: 31, title: 'Mom coming', type: 'evt-banner', time: 'All Day', desc: 'Closing calendar block calculation verification' }
         ];
+
+        function cycleTextScale() {
+            textScaleLevel = (textScaleLevel + 1) % scaleValues.length;
+            
+            // Apply the math scalar parameter globally to CSS
+            document.documentElement.style.setProperty('--text-scale', scaleValues[textScaleLevel]);
+            
+            // Adjust label indicators dynamically
+            document.getElementById('btn-text-scale').innerText = scaleLabels[textScaleLevel];
+        }
 
         function toggleView(paneId) {
             document.querySelectorAll('.view-pane').forEach(pane => pane.classList.add('hidden'));
@@ -453,42 +479,4 @@
                         
                         if (e.type === 'evt-game') dynamicClass += " evt-game";
                         else if (e.type === 'evt-special') dynamicClass += " evt-special";
-                        else if (e.type === 'evt-banner') dynamicClass += " evt-banner";
-                        else if (e.type === 'evt-practice') inlineStyles = "color:var(--text-muted);";
-                        else if (e.type === 'evt-personal') inlineStyles = "color:#ffffff;";
-                        else if (e.type === 'evt-medical-alt') inlineStyles = "color:var(--cal-yellow-text);";
-
-                        innerEventsHTML += `<div class="${dynamicClass}" style="${inlineStyles}">${e.title}</div>`;
-                    });
-                    
-                    gridHTML += `
-                        <div class="grid-cell ${isTodayStyle}" onclick="setDisplayMode('day', ${d})">
-                            <span class="cell-number">${d}</span>
-                            ${innerEventsHTML}
-                        </div>
-                    `;
-                }
-                
-                for (let i = 0; i < 6; i++) {
-                    gridHTML += `<div class="grid-cell other-month"></div>`;
-                }
-                
-                gridHTML += `</div>`;
-                displayContainer.innerHTML = gridHTML;
-            }
-        }
-
-        window.addEventListener('DOMContentLoaded', () => {
-            const savedUrlInput = document.getElementById('calendar-url');
-            if (savedUrlInput) {
-                savedUrlInput.value = localStorage.getItem('cal_feed_url') || '';
-            }
-            setDisplayMode('month');
-        });
-
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js').catch(err => console.log("SW error:", err));
-        }
-    </script>
-</body>
-</html>
+                        else if (e.type === 'evt-banner') dynamic
