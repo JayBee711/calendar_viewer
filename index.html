@@ -46,34 +46,9 @@
             display: flex;
             flex-direction: column;
             box-sizing: border-box;
-        }
-
-        /* Zoom Wrapper Layer Setup */
-        #zoom-wrapper {
-            width: 100%;
-            height: 100%;
-            transform-origin: top left;
-            transition: transform 0.1s ease-out;
-            will-change: transform;
-            display: flex;
-            flex-direction: column;
-        }
-        
-        #zoom-wrapper.snap-back {
-            transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
-        }
-
-        .view-pane {
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            width: 100vw;
-            box-sizing: border-box;
             padding-top: env(safe-area-inset-top);
             padding-bottom: env(safe-area-inset-bottom);
         }
-        
-        .view-pane.hidden { display: none !important; }
 
         header {
             display: flex;
@@ -81,6 +56,8 @@
             align-items: center;
             padding: 15px 16px 10px 16px;
             flex-shrink: 0;
+            z-index: 10;
+            background-color: var(--bg-color);
         }
 
         h1 { margin: 0; font-size: 1.8rem; font-weight: 700; }
@@ -105,6 +82,7 @@
             padding: 2px;
             margin: 0 16px 15px 16px;
             flex-shrink: 0;
+            z-index: 10;
         }
 
         .segment-btn {
@@ -128,21 +106,37 @@
             font-weight: 600;
         }
 
-        /* Dynamic Main Display viewport container */
-        .display-container {
-            flex: 1; 
+        /* View Panes Container */
+        .view-pane {
             display: flex;
             flex-direction: column;
-            min-height: 0; 
-            padding: 0;
-            margin: 0;
+            flex: 1;
+            min-height: 0;
+            width: 100%;
+        }
+        
+        .view-pane.hidden { display: none !important; }
+
+        /* Zoom Wrapper surrounds ONLY the dynamic list/grid display content area now */
+        #zoom-wrapper {
+            flex: 1;
+            min-height: 0;
+            width: 100%;
+            transform-origin: top left;
+            transition: transform 0.1s ease-out;
+            will-change: transform;
+        }
+        
+        #zoom-wrapper.snap-back {
+            transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
         }
 
-        /* Scrollable layout windows for Agenda listings */
+        /* Scrollable layout windows for Day/Week mode */
         .scrollable-content {
-            flex: 1;
+            height: 100%;
             overflow-y: auto;
             padding: 0 16px;
+            box-sizing: border-box;
             -webkit-overflow-scrolling: touch;
         }
 
@@ -253,51 +247,47 @@
 </head>
 <body>
 
-    <div id="zoom-wrapper">
+    <div id="agenda-pane" class="view-pane">
+        <header>
+            <h1 id="current-date-title">May 2026</h1>
+            <button class="icon-btn" onclick="toggleView('settings-pane')">Settings</button>
+        </header>
+
+        <div class="segmented-control">
+            <button id="btn-month" class="segment-btn" onclick="setDisplayMode('month')">Month</button>
+            <button id="btn-week" class="segment-btn" onclick="setDisplayMode('week')">Week</button>
+            <button id="btn-day" class="segment-btn" onclick="setDisplayMode('day')">Day</button>
+        </div>
         
-        <div id="agenda-pane" class="view-pane">
-            <header>
-                <h1 id="current-date-title">May 2026</h1>
-                <button class="icon-btn" onclick="toggleView('settings-pane')">Settings</button>
-            </header>
-
-            <div class="segmented-control">
-                <button id="btn-month" class="segment-btn" onclick="setDisplayMode('month')">Month</button>
-                <button id="btn-week" class="segment-btn" onclick="setDisplayMode('week')">Week</button>
-                <button id="btn-day" class="segment-btn" onclick="setDisplayMode('day')">Day</button>
+        <div id="zoom-wrapper">
             </div>
+    </div>
+
+    <div id="settings-pane" class="view-pane hidden">
+        <header>
+            <h1>Feed Setup</h1>
+            <button class="icon-btn" onclick="toggleView('agenda-pane')">Back</button>
+        </header>
+
+        <div class="settings-content">
+            <p style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.4; margin-bottom: 25px;">
+                Paste any valid Apple or Google iCal URL below. It saves strictly to your device's memory.
+            </p>
             
-            <div class="display-container" id="calendar-display">
-                </div>
+            <label style="display:block; font-size:0.85rem; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;" for="calendar-url">Calendar iCal / Webcal URL</label>
+            <input type="url" id="calendar-url" placeholder="Paste link here (https://... or webcal://...)" style="width:100%; background-color:var(--card-bg); border:1px solid var(--border); color:var(--text-main); padding:12px; border-radius:10px; font-size:1rem; box-sizing:border-box; margin-bottom:15px; outline:none;">
+
+            <button class="icon-btn" style="width:100%; background-color:var(--accent); color:#fff; padding:14px; border-radius:12px; font-size:1rem;" onclick="saveFeeds()">Save & Refresh</button>
         </div>
-
-        <div id="settings-pane" class="view-pane hidden">
-            <header>
-                <h1>Feed Setup</h1>
-                <button class="icon-btn" onclick="toggleView('agenda-pane')">Back</button>
-            </header>
-
-            <div class="settings-content">
-                <p style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.4; margin-bottom: 25px;">
-                    Paste any valid Apple or Google iCal URL below. It saves strictly to your device's memory.
-                </p>
-                
-                <label style="display:block; font-size:0.85rem; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;" for="calendar-url">Calendar iCal / Webcal URL</label>
-                <input type="url" id="calendar-url" placeholder="Paste link here (https://... or webcal://...)" style="width:100%; background-color:var(--card-bg); border:1px solid var(--border); color:var(--text-main); padding:12px; border-radius:10px; font-size:1rem; box-sizing:border-box; margin-bottom:15px; outline:none;">
-
-                <button class="icon-btn" style="width:100%; background-color:var(--accent); color:#fff; padding:14px; border-radius:12px; font-size:1rem;" onclick="saveFeeds()">Save & Refresh</button>
-            </div>
-        </div>
-
     </div>
 
     <script>
         let currentMode = 'month';
         let selectedDay = 19; 
         const anchorYear = 2026;
-        const anchorMonth = 4; // May (0-indexed parsing style)
+        const anchorMonth = 4; // May (0-indexed)
 
-        // Unified hardcoded data structures matching your timeline snapshot perfectly
+        // The hardcoded preview array populated cleanly from your original calendar layout snapshot
         const hardcodedEvents = [
             { day: 1, title: 'Game', type: 'evt-game', time: '5:30 PM', desc: 'Away Game Schedule Matchup' },
             { day: 1, title: 'Visitors coming', type: 'evt-banner', time: 'All Day', desc: 'Guest arrival log tracking' },
@@ -320,7 +310,7 @@
             { day: 17, title: 'Mom coming', type: 'evt-banner', time: 'All Day', desc: 'Mom arrives timeline tracking block' },
             { day: 18, title: 'Mom coming', type: 'evt-banner', time: 'All Day', desc: 'Family timeline layout log' },
             { day: 18, title: 'Game', type: 'evt-game', time: '5:30 PM', desc: 'Championship bracket qualifier match' },
-            { day: 19, title: 'Mom coming', type: 'evt-banner', time: 'All Day', desc: 'Dinner plans and city visit agenda' },
+            { day: 19, title: 'Mom coming', type: 'evt-banner', time: 'All Day', desc: 'Today - Dinner plans and city visit agenda' },
             { day: 20, title: 'Mom coming', type: 'evt-banner', time: 'All Day', desc: 'Midweek exploration schedule' },
             { day: 20, title: 'White vs. Blue', type: 'evt-practice', time: '6:00 PM', desc: 'Intra-squad club showcase scrimmage' },
             { day: 21, title: 'Mom coming', type: 'evt-banner', time: 'All Day', desc: 'Mom airport departure timeline run' },
@@ -339,7 +329,6 @@
         function toggleView(paneId) {
             document.querySelectorAll('.view-pane').forEach(pane => pane.classList.add('hidden'));
             document.getElementById(paneId).classList.remove('hidden');
-            if (paneId === 'agenda-pane') updateCalendarUI();
         }
 
         function setDisplayMode(mode, clickedDay = null) {
@@ -349,8 +338,8 @@
             }
             
             document.querySelectorAll('.segment-btn').forEach(btn => btn.classList.remove('active'));
-            const dynamicActiveTarget = document.getElementById(`btn-${mode}`);
-            if (dynamicActiveTarget) dynamicActiveTarget.classList.add('active');
+            const activeTarget = document.getElementById(`btn-${mode}`);
+            if (activeTarget) activeTarget.classList.add('active');
             
             updateHeaderTitle();
             updateCalendarUI();
@@ -373,11 +362,11 @@
             let rawUrl = document.getElementById('calendar-url').value.trim();
             if (!rawUrl) {
                 localStorage.removeItem('cal_feed_url');
-                alert('Calendar link cleared. Using hardcoded preview events.');
+                alert('Calendar URL cleared.');
             } else {
                 if (rawUrl.startsWith('webcal://')) rawUrl = 'https://' + rawUrl.substring(9);
                 localStorage.setItem('cal_feed_url', rawUrl);
-                alert('Link saved to device memory!');
+                alert('Saved successfully!');
             }
             toggleView('agenda-pane');
         }
@@ -385,10 +374,10 @@
         document.getElementById('calendar-url').value = localStorage.getItem('cal_feed_url') || '';
 
         function updateCalendarUI() {
-            const displayContainer = document.getElementById('calendar-display');
-            if (!displayContainer) return;
+            const zoomWrapper = document.getElementById('zoom-wrapper');
+            if (!zoomWrapper) return;
             
-            displayContainer.innerHTML = ''; 
+            zoomWrapper.innerHTML = ''; // Safety flush
 
             if (currentMode === 'day') {
                 const dayEvents = hardcodedEvents.filter(e => e.day === selectedDay);
@@ -407,124 +396,4 @@
                         dayHTML += `
                             <div class="event-card" style="border-left-color: ${stripeColor};">
                                 <p class="event-title">${e.title}</p>
-                                <p class="event-time" style="color:var(--text-main); font-weight:600; margin-bottom:6px;">${e.time}</p>
-                                <p class="event-time" style="font-size:0.88rem; line-height:1.3;">${e.desc}</p>
-                            </div>
-                        `;
-                    });
-                }
-                dayHTML += `</div>`;
-                displayContainer.innerHTML = dayHTML;
-            } 
-            else if (currentMode === 'week') {
-                const targetDateObj = new Date(anchorYear, anchorMonth, selectedDay);
-                const dayOfWeekIndex = targetDateObj.getDay(); 
-                const startSundayDayNum = selectedDay - dayOfWeekIndex;
-
-                let weekHTML = `<div class="scrollable-content" style="padding-top:10px;">`;
-                
-                for (let i = 0; i < 7; i++) {
-                    const loopDayNum = startSundayDayNum + i;
-                    
-                    if (loopDayNum > 0 && loopDayNum <= 31) {
-                        const loopDateObj = new Date(anchorYear, anchorMonth, loopDayNum);
-                        const weekdayHeaderLabel = loopDateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
-                        const singleDayEvents = hardcodedEvents.filter(e => e.day === loopDayNum);
-                        
-                        weekHTML += `<div class="week-day-block"><div class="week-day-title">${weekdayHeaderLabel}</div>`;
-                        
-                        if (singleDayEvents.length === 0) {
-                            weekHTML += `<p style="font-size:0.85rem; color:var(--text-muted); margin:0 0 12px 4px;">No events</p>`;
-                        } else {
-                            singleDayEvents.forEach(e => {
-                                let borderCol = 'var(--accent)';
-                                if (e.type === 'evt-game') borderCol = 'var(--cal-orange-text)';
-                                if (e.type === 'evt-special') borderCol = 'var(--cal-green-text)';
-                                if (e.type === 'evt-banner') borderCol = 'var(--cal-yellow-text)';
-                                if (e.type === 'evt-medical-alt') borderCol = 'var(--cal-yellow-text)';
-                                
-                                weekHTML += `
-                                    <div class="event-card" style="border-left-color: ${borderCol}; padding:10px 12px; margin-bottom:8px;">
-                                        <p class="event-title" style="font-size:1rem; margin-bottom:2px;">${e.title}</p>
-                                        <p class="event-time">${e.time}</p>
-                                    </div>
-                                `;
-                            });
-                        }
-                        weekHTML += `</div>`;
-                    }
-                }
-                weekHTML += `</div>`;
-                displayContainer.innerHTML = weekHTML;
-            } 
-            else if (currentMode === 'month') {
-                let gridHTML = `
-                    <div class="month-grid">
-                        <div class="day-header">S</div><div class="day-header">M</div><div class="day-header">T</div>
-                        <div class="day-header">W</div><div class="day-header">T</div><div class="day-header">F</div><div class="day-header">S</div>
-                `;
-                
-                // April Spacers (May 1, 2026 falls on a Friday)
-                for (let i = 0; i < 5; i++) {
-                    gridHTML += `<div class="grid-cell other-month"></div>`;
-                }
-                
-                // Build exactly 31 day layout slots
-                for (let d = 1; d <= 31; d++) {
-                    const isTodayStyle = (d === 19) ? 'today' : '';
-                    let innerEventsHTML = '';
-
-                    const matchedCellEvents = hardcodedEvents.filter(e => e.day === d);
-                    matchedCellEvents.forEach(e => {
-                        let dynamicClass = "micro-event";
-                        let inlineStyles = "";
-                        
-                        if (e.type === 'evt-game') dynamicClass += " evt-game";
-                        else if (e.type === 'evt-special') dynamicClass += " evt-special";
-                        else if (e.type === 'evt-banner') dynamicClass += " evt-banner";
-                        else if (e.type === 'evt-practice') inlineStyles = "color:var(--text-muted);";
-                        else if (e.type === 'evt-personal') inlineStyles = "color:#ffffff;";
-                        else if (e.type === 'evt-medical-alt') inlineStyles = "color:var(--cal-yellow-text);";
-
-                        innerEventsHTML += `<div class="${dynamicClass}" style="${inlineStyles}">${e.title}</div>`;
-                    });
-                    
-                    gridHTML += `
-                        <div class="grid-cell ${isTodayStyle}" onclick="setDisplayMode('day', ${d})">
-                            <span class="cell-number">${d}</span>
-                            ${innerEventsHTML}
-                        </div>
-                    `;
-                }
-                
-                // June trailing padding blocks
-                for (let i = 0; i < 6; i++) {
-                    gridHTML += `<div class="grid-cell other-month"></div>`;
-                }
-                
-                gridHTML += `</div>`;
-                displayContainer.innerHTML = gridHTML;
-            }
-        }
-
-        // ==========================================
-        // SMART PINCH-TO-ZOOM ENGINE LOGIC
-        // ==========================================
-        const zoomWrapper = document.getElementById('zoom-wrapper');
-        let scale = 1;
-        let startDist = 0;
-        let currentScale = 1;
-
-        document.addEventListener('touchstart', function(e) {
-            if (e.touches.length === 2) {
-                zoomWrapper.classList.remove('snap-back');
-                startDist = Math.hypot(
-                    e.touches[0].pageX - e.touches[1].pageX,
-                    e.touches[0].pageY - e.touches[1].pageY
-                );
-                currentScale = scale;
-            }
-        }, { passive: true });
-
-        document.addEventListener('touchmove', function(e) {
-            if
+                                <p class="event-time" style="color:var(--text-main);
