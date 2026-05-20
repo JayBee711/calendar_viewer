@@ -449,4 +449,258 @@
             { id: 24, day: 20, title: 'White vs. Blue', type: 'evt-practice', time: '6:00 PM', desc: 'Intra-squad club showcase scrimmage' },
             { id: 28, day: 22, title: 'Jane Vacation', type: 'evt-special', time: 'All Day', desc: 'Out of office calendar holiday holdout' },
             { id: 29, day: 24, title: 'Mom coming', type: 'evt-banner', time: 'All Day', desc: 'Extended family timeline weekend log' },
-            { id
+            { id: 30, day: 25, title: 'Mom coming', type: 'evt-banner', time: 'All Day', desc: 'Holiday collection route' },
+            { id: 31, day: 25, title: 'Memorial Day', type: 'evt-special', time: 'All Day', desc: 'National Holiday - Office Closed' },
+            { id: 32, day: 26, title: 'Game', type: 'evt-game', time: '6:00 PM', desc: 'Evening club series trial' },
+            { id: 33, day: 27, title: 'Game', type: 'evt-game', time: '5:30 PM', desc: 'Midweek division match' },
+            { id: 34, day: 29, title: 'Games', type: 'evt-game', time: '4:00 PM', desc: 'Pre-weekend open schedule tournament sets' },
+            { id: 35, day: 31, title: 'Mom coming', type: 'evt-banner', time: 'All Day', desc: 'Closing calendar block calculation verification' }
+        ];
+
+        function cycleTextScale() {
+            textScaleLevel = (textScaleLevel + 1) % scaleValues.length;
+            document.documentElement.style.setProperty('--text-scale', scaleValues[textScaleLevel]);
+            document.getElementById('btn-text-scale').innerText = scaleLabels[textScaleLevel];
+        }
+
+        function toggleView(paneId) {
+            var targetPane = document.getElementById(paneId);
+            if (!targetPane) return;
+            document.querySelectorAll('.view-pane').forEach(function(pane) { 
+                pane.classList.add('hidden'); 
+            });
+            targetPane.githubActions = true;
+            targetPane.classList.remove('hidden');
+        }
+
+        function setDisplayMode(mode, clickedDay) {
+            currentMode = mode;
+            if (clickedDay !== undefined && clickedDay !== null) {
+                selectedDay = parseInt(clickedDay, 10);
+            }
+            
+            document.querySelectorAll('.segment-btn').forEach(function(btn) { 
+                btn.classList.remove('active'); 
+            });
+            var activeTarget = document.getElementById('btn-' + mode);
+            if (activeTarget) activeTarget.classList.add('active');
+            
+            updateHeaderTitle();
+            updateCalendarUI();
+        }
+
+        function updateHeaderTitle() {
+            var heading = document.getElementById('current-date-title');
+            if (!heading) return;
+
+            if (currentMode === 'month') {
+                heading.innerText = "May 2026";
+            } else {
+                var activeDate = new Date(anchorYear, anchorMonth, selectedDay);
+                var options = { weekday: 'long', month: 'short', day: 'numeric' };
+                heading.innerText = activeDate.toLocaleDateString('en-US', options);
+            }
+        }
+
+        function openEventDetail(eventId, eventObj) {
+            if (eventObj) {
+                eventObj.stopPropagation();
+                eventObj.preventDefault();
+            }
+            
+            var targetEvent = hardcodedEvents.find(function(e) { return e.id === eventId; });
+            if (!targetEvent) return;
+
+            document.getElementById('modal-event-title').innerText = targetEvent.title;
+            document.getElementById('modal-event-time').innerText = targetEvent.time;
+            document.getElementById('modal-event-location').innerText = targetEvent.location || 'Not Specified';
+            document.getElementById('modal-event-desc').innerText = targetEvent.desc || 'No descriptions provided.';
+            
+            document.getElementById('detail-modal').classList.add('active');
+        }
+
+        function closeEventDetail() {
+            document.getElementById('detail-modal').classList.remove('active');
+        }
+
+        function saveFeeds() {
+            var urlInput = document.getElementById('calendar-url');
+            if (!urlInput) return;
+            var rawUrl = urlInput.value.trim();
+            if (!rawUrl) {
+                localStorage.removeItem('cal_feed_url');
+                alert('Calendar URL cleared.');
+            } else {
+                if (rawUrl.indexOf('webcal://') === 0) {
+                    rawUrl = 'https://' + rawUrl.substring(9);
+                }
+                localStorage.setItem('cal_feed_url', rawUrl);
+                alert('Saved successfully!');
+            }
+            toggleView('agenda-pane');
+        }
+
+        function clearAppCache() {
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                    registrations.forEach(function(registration) {
+                        registration.unregister();
+                    });
+                });
+            }
+            if (window.caches) {
+                caches.keys().then(function(names) {
+                    names.forEach(function(name) { 
+                        caches.delete(name); 
+                    });
+                });
+            }
+            localStorage.clear();
+            alert('Application cache purged. Reloading page...');
+            window.location.reload(true);
+        }
+
+        function updateCalendarUI() {
+            var displayContainer = document.getElementById('calendar-display');
+            if (!displayContainer) return;
+            
+            displayContainer.innerHTML = ''; 
+
+            if (currentMode === 'day') {
+                var dayEvents = hardcodedEvents.filter(function(e) { return e.day === selectedDay; });
+                
+                var dayHTML = '<div class="scrollable-content" onclick="setDisplayMode(\'month\')">' +
+                              '<div class="day-view-scroll-wrapper">' +
+                              '<div class="day-cards-box" onclick="event.stopPropagation()">';
+                
+                if (dayEvents.length === 0) {
+                    dayHTML += '<p style="text-align:center; color:var(--text-muted); margin-top:40px; font-weight:500;">No events scheduled for this day.</p>' +
+                               '<p style="text-align:center; font-size:0.85rem; color:var(--accent); opacity:0.8;">Tap anywhere to return to Month View</p>';
+                } else {
+                    dayEvents.forEach(function(e) {
+                        var stripeColor = 'var(--accent)';
+                        if (e.type === 'evt-game') stripeColor = 'var(--cal-orange-text)';
+                        else if (e.type === 'evt-special') stripeColor = 'var(--cal-green-text)';
+                        else if (e.type === 'evt-banner') stripeColor = 'var(--cal-yellow-text)';
+                        else if (e.type === 'evt-medical-alt') stripeColor = 'var(--cal-yellow-text)';
+                        else if (e.type === 'evt-practice') stripeColor = 'var(--text-muted)';
+                        else if (e.type === 'evt-personal') stripeColor = '#ffffff';
+                        
+                        dayHTML += '<div class="event-card" style="border-left-color: ' + stripeColor + ';" onclick="openEventDetail(' + e.id + ', event)">' +
+                                '<p class="event-title">' + e.title + '</p>' +
+                                '<p class="event-time" style="color:var(--text-main); font-weight:600; margin-bottom:6px;">' + e.time + '</p>' +
+                                '<p class="event-time" style="font-size:0.88rem; line-height:1.3; opacity:0.85;">' + (e.location ? '📍 ' + e.location : 'Tap for details') + '</p>' +
+                            '</div>';
+                    });
+                }
+                
+                dayHTML += '</div>' + 
+                           '<div class="day-backdrop-extension"></div>' + 
+                           '</div>' + 
+                           '</div>';
+                
+                displayContainer.innerHTML = dayHTML;
+            } 
+            else if (currentMode === 'week') {
+                var targetDateObj = new Date(anchorYear, anchorMonth, selectedDay);
+                var dayOfWeekIndex = targetDateObj.getDay(); 
+                var startSundayDayNum = selectedDay - dayOfWeekIndex;
+
+                var weekHTML = '<div class="scrollable-content" style="padding-top:10px;">';
+                
+                for (var i = 0; i < 7; i++) {
+                    var loopDayNum = startSundayDayNum + i;
+                    
+                    if (loopDayNum > 0 && loopDayNum <= 31) {
+                        var loopDateObj = new Date(anchorYear, anchorMonth, loopDayNum);
+                        var weekdayHeaderLabel = loopDateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+                        (function(dNum) {
+                            var singleDayEvents = hardcodedEvents.filter(function(e) { return e.day === dNum; });
+                            weekHTML += '<div class="week-day-block" onclick="setDisplayMode(\'day\', ' + dNum + ')"><div class="week-day-title">' + weekdayHeaderLabel + '</div>';
+                            
+                            if (singleDayEvents.length === 0) {
+                                weekHTML += '<p style="font-size:0.85rem; color:var(--text-muted); margin:0 0 12px 4px;">No events</p>';
+                            } else {
+                                singleDayEvents.forEach(function(e) {
+                                    var borderCol = 'var(--accent)';
+                                    if (e.type === 'evt-game') borderCol = 'var(--cal-orange-text)';
+                                    else if (e.type === 'evt-special') borderCol = 'var(--cal-green-text)';
+                                    else if (e.type === 'evt-banner') borderCol = 'var(--cal-yellow-text)';
+                                    else if (e.type === 'evt-medical-alt') borderCol = 'var(--cal-yellow-text)';
+                                    else if (e.type === 'evt-practice') borderCol = 'var(--text-muted)';
+                                    else if (e.type === 'evt-personal') borderCol = '#ffffff';
+                                    
+                                    weekHTML += '<div class="event-card" style="border-left-color: ' + borderCol + '; padding:10px 12px; margin-bottom:8px;" onclick="openEventDetail(' + e.id + ', event)">' +
+                                            '<p class="event-title" style="font-size:1rem; margin-bottom:2px;">' + e.title + '</p>' +
+                                            '<p class="event-time">' + e.time + '</p>' +
+                                        '</div>';
+                                });
+                            }
+                            weekHTML += '</div>';
+                        })(loopDayNum);
+                    }
+                }
+                weekHTML += '</div>';
+                displayContainer.innerHTML = weekHTML;
+            } 
+            else if (currentMode === 'month') {
+                var gridHTML = '<div class="month-grid">' +
+                        '<div class="day-header">S</div><div class="day-header">M</div><div class="day-header">T</div>' +
+                        '<div class="day-header">W</div><div class="day-header">T</div><div class="day-header">F</div><div class="day-header">S</div>';
+                
+                for (var i = 0; i < 5; i++) {
+                    gridHTML += '<div class="grid-cell other-month"></div>';
+                }
+                
+                for (var d = 1; d <= 31; d++) {
+                    var innerEventsHTML = '';
+
+                    (function(dNum) {
+                        var isTodayStyle = (dNum === 19) ? 'today' : '';
+                        var matchedCellEvents = hardcodedEvents.filter(function(e) { return e.day === dNum; });
+                        matchedCellEvents.forEach(function(e) {
+                            var dynamicClass = "micro-event";
+                            var inlineStyles = "";
+                            
+                            if (e.type === 'evt-game') dynamicClass += " evt-game";
+                            else if (e.type === 'evt-special') dynamicClass += " evt-special";
+                            else if (e.type === 'evt-banner') dynamicClass += " evt-banner";
+                            else if (e.type === 'evt-practice') inlineStyles = "color:var(--text-muted);";
+                            else if (e.type === 'evt-personal') inlineStyles = "color:#ffffff;";
+                            else if (e.type === 'evt-medical-alt') inlineStyles = "color:var(--cal-yellow-text);";
+
+                            innerEventsHTML += '<div class="' + dynamicClass + '" style="' + inlineStyles + '">' + e.title + '</div>';
+                        });
+                        
+                        gridHTML += '<div class="grid-cell ' + isTodayStyle + '" onclick="setDisplayMode(\'day\', ' + dNum + ')">' +
+                                '<span class="cell-number">' + dNum + '</span>' +
+                                innerEventsHTML +
+                            '</div>';
+                    })(d);
+                }
+                
+                for (var i = 0; i < 6; i++) {
+                    gridHTML += '<div class="grid-cell other-month"></div>';
+                }
+                
+                gridHTML += '</div>';
+                displayContainer.innerHTML = gridHTML;
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', function() {
+            var savedUrlInput = document.getElementById('calendar-url');
+            if (savedUrlInput) {
+                savedUrlInput.value = localStorage.getItem('cal_feed_url') || '';
+            }
+            setDisplayMode('month');
+        });
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js').catch(function(err) {
+                console.log("SW error:", err);
+            });
+        }
+    </script>
+</body>
+</html>
