@@ -757,44 +757,40 @@
                 // Generate Continuous Overlay Track Layouts
                 var overlayHTML = '<div class="continuous-banner-overlay">' +
                                   '<div style="grid-column: span 7; height: 0;"></div>'; /* Header spacing element matching day row */
+                
+                var multiDayBanners = hardcodedEvents.filter(function(e) { return e.type === 'evt-banner'; });
+                
+                multiDayBanners.forEach(function(e) {
+                    var totalStartCellIndex = emptyOffsetCells + e.startDay; 
+                    var totalEndCellIndex = emptyOffsetCells + e.endDay; 
+                    
+                    var startingRow = Math.floor((totalStartCellIndex - 1) / 7) + 2; 
+                    var endingRow = Math.floor((totalEndCellIndex - 1) / 7) + 2; 
 
-// 1. First, append the grid itself
-monthWrapper.innerHTML = gridHTML;
-displayContainer.appendChild(monthWrapper);
-
-// 2. Create the overlay container
-var overlay = document.createElement('div');
-overlay.className = 'continuous-banner-overlay';
-
-// 3. The Stacking Engine
-var trackOccupancy = {}; 
-
-hardcodedEvents.filter(function(e) { return e.type === 'evt-banner'; }).forEach(function(e) {
-    var sRow = Math.floor((e.startDay - 1) / 7) + 2;
-    var eRow = Math.floor((e.endDay - 1) / 7) + 2;
-
-    for (var r = sRow; r <= eRow; r++) {
-        if (!trackOccupancy[r]) trackOccupancy[r] = [];
-        
-        // Find the first available lane (track)
-        var t = 0; 
-        while (trackOccupancy[r][t]) { t++; }
-        trackOccupancy[r][t] = true;
-
-        var item = document.createElement('div');
-        item.className = 'continuous-banner-item';
-        item.style.gridRow = r;
-        item.style.gridColumn = (((e.startDay - 1) % 7) + 1) + ' / ' + (((e.endDay - 1) % 7) + 2);
-        item.style.marginTop = (t * 18 + 5) + 'px'; // The "Vertical Stacking" logic
-        item.innerText = e.title;
-        item.onclick = function(event) { openEventDetail(e.id, event); };
-        overlay.appendChild(item);
-    }
-});
-
-// 4. Append the overlay directly to the month wrapper
-monthWrapper.appendChild(overlay);
-
+                    for (var r = startingRow; r <= endingRow; r++) {
+                        var currentWeekRowStart = (r - 2) * 7 + 1;
+                        var currentWeekRowEnd = currentWeekRowStart + 6;
+                        
+                        var relativeStartColumn = Math.max(totalStartCellIndex, currentWeekRowStart);
+                        var relativeEndColumn = Math.min(totalEndCellIndex, currentWeekRowEnd);
+                        
+                        var gridColStart = ((relativeStartColumn - 1) % 7) + 1;
+                        var gridColEnd = ((relativeEndColumn - 1) % 7) + 2; 
+                        
+                        overlayHTML += '<div class="continuous-banner-item" style="' +
+                                       'grid-row-start: ' + r + '; ' +
+                                       'grid-column-start: ' + gridColStart + '; ' +
+                                       'grid-column-end: ' + gridColEnd + ';" ' +
+                                       'onclick="openEventDetail(' + e.id + ', event)">' +
+                                       e.title +
+                                       '</div>';
+                    }
+                });
+                
+                overlayHTML += '</div>'; // End Overlay Tracking Matrix Container
+                
+                monthWrapper.innerHTML = gridHTML + overlayHTML;
+                displayContainer.appendChild(monthWrapper);
             }
         }
 
