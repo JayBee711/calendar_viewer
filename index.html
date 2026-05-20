@@ -127,6 +127,7 @@
             flex: 1;
             min-height: 0;
             width: 100%;
+            position: relative;
         }
 
         .scrollable-content {
@@ -171,7 +172,13 @@
         .event-title { font-size: calc(1.1rem * var(--text-scale)); font-weight: 600; margin: 0 0 4px 0; }
         .event-time { font-size: calc(0.9rem * var(--text-scale)); color: var(--text-muted); margin: 0; }
         
-        /* Month Matrix Layout Framework */
+        /* Month Matrix Wrapper Layer */
+        .month-view-container {
+            position: relative;
+            height: 100%;
+            width: 100%;
+        }
+
         .month-grid {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
@@ -191,6 +198,7 @@
             color: var(--text-muted);
             padding: 8px 0;
             text-transform: uppercase;
+            z-index: 5;
         }
         
         .grid-cell {
@@ -203,6 +211,7 @@
             min-height: 0;
             overflow: hidden;
             cursor: pointer;
+            position: relative;
             -webkit-tap-highlight-color: transparent;
         }
         
@@ -219,6 +228,8 @@
             text-align: center;
             line-height: calc(16px * var(--text-scale));
             margin-bottom: 1px;
+            position: relative;
+            z-index: 4;
         }
         
         .grid-cell.today .cell-number {
@@ -228,6 +239,18 @@
         }
         
         .grid-cell.other-month { opacity: 0.2; }
+
+        /* Structural Container holding discrete non-banner cell items */
+        .cell-events-bucket {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            width: 100%;
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
+            padding-top: 18px; /* Offset space beneath absolute text labels */
+        }
 
         /* Micro Inline Layout Display Tags */
         .micro-event {
@@ -245,12 +268,45 @@
         
         .evt-game { background-color: var(--cal-orange); color: var(--cal-orange-text); }
         .evt-special { background-color: var(--cal-green); color: var(--cal-green-text); }
-        .evt-banner { 
+        
+        /* Continuous Absolute Row Span Positioning Engine */
+        .continuous-banner-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none; /* Let baseline clicks bubble into day cells */
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            grid-template-rows: auto repeat(6, 1fr);
+            gap: 1px;
+            box-sizing: border-box;
+        }
+
+        .continuous-banner-item {
+            grid-column-start: 1;
+            grid-column-end: 2;
+            grid-row-start: 2;
+            
+            align-self: end; /* Fasten bottom track position */
+            margin-bottom: 4px;
+            z-index: 10;
+            pointer-events: auto; /* Re-enable clicks to trigger details box */
+            cursor: pointer;
+            
+            font-size: calc(0.62rem * var(--text-scale));
+            font-weight: 600;
+            padding: 3px 6px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            box-sizing: border-box;
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+            
             background-color: var(--cal-yellow); 
             color: var(--cal-yellow-text);
-            border-radius: 2px;
-            margin: 0 -2px;
-            padding-left: 4px;
         }
         
         .week-day-block { margin-bottom: 20px; }
@@ -409,10 +465,13 @@
         var scaleLabels = ["A+", "A++", "A-"];
 
         var hardcodedEvents = [
+            /* Continuous / Multi-Day Block Array Mapping */
+            { id: 2, startDay: 1, endDay: 3, title: 'Visitors coming', type: 'evt-banner', time: 'All Day', location: 'Home', desc: 'Guest arrival log tracking. Check room arrangements.' },
+            { id: 19, startDay: 17, endDay: 31, title: 'Mom coming', type: 'evt-banner', time: 'All Day', desc: 'Mom arrives timeline tracking blocks' },
+
+            /* Single Point-In-Time Items */
             { id: 1, day: 1, title: 'Game', type: 'evt-game', time: '5:30 PM', location: 'Stacy Memorial Ice Rink', desc: 'Away Game Schedule Matchup. Wear away jersey sets.' },
-            { id: 2, day: 1, title: 'Visitors coming', type: 'evt-banner', time: 'All Day', location: 'Home', desc: 'Guest arrival log tracking. Check room arrangements.' },
             { id: 3, day: 2, title: 'Games', type: 'evt-game', time: '12:00 PM', location: 'Civic Arena Complex', desc: 'Double Header Tournament Play. Bring extra tape and provisions.' },
-            { id: 4, day: 3, title: 'Visitors coming', type: 'evt-banner', time: 'All Day', location: 'Home', desc: 'Family Weekend Gathering and backyard setup.' },
             { id: 5, day: 4, title: 'Game', type: 'evt-game', time: '6:00 PM', desc: 'Regular Season Divisional Match' },
             { id: 6, day: 5, title: 'Cinco de Mayo', type: 'evt-special', time: 'All Day', desc: 'Holiday Commemoration' },
             { id: 7, day: 5, title: 'Game', type: 'evt-game', time: '5:30 PM', desc: 'Evening Stadium Set' },
@@ -427,12 +486,9 @@
             { id: 16, day: 14, title: 'Jim Dietician', type: 'evt-medical-alt', time: '1:15 PM', location: 'Wellness Annex Room 3B', desc: 'Nutritional wellness progress assessment and macro-tracking log sync.' },
             { id: 17, day: 15, title: 'Game', type: 'evt-game', time: '6:30 PM', desc: 'Weekend qualifier tournament kickoff' },
             { id: 18, day: 16, title: 'Tom Birthday', type: 'evt-medical-alt', time: 'All Day', desc: 'Celebration log day coordinate' },
-            { id: 19, day: 17, title: 'Mom coming', type: 'evt-banner', time: 'All Day', desc: 'Mom arrives timeline tracking block' },
-            { id: 20, day: 18, title: 'Mom coming', type: 'evt-banner', time: 'All Day', desc: 'Family timeline layout log' },
             { id: 21, day: 18, title: 'Game', type: 'evt-game', time: '5:30 PM', desc: 'Championship bracket qualifier match' },
             
             // --- MAY 21 HEAVY STRESS TESTING SET ---
-            { id: 22, day: 21, title: 'Mom coming', type: 'evt-banner', time: 'All Day', location: 'Metro Airport Terminal 2', desc: 'Today - Dinner plans and city visit agenda' },
             { id: 25, day: 21, title: 'Mom departure run', type: 'evt-banner', time: '6:30 AM', location: 'Terminal 2 Drop-off', desc: 'Mom airport departure timeline run' },
             { id: 27, day: 21, title: 'Jim Colon Appt', type: 'evt-personal', time: '7:00 AM', location: 'Outpatient Clinic Desk A', desc: 'Outpatient clinic arrival registration checkpoint. fasting protocol active.' },
             { id: 36, day: 21, title: 'Review CAD Prototypes', type: 'evt-personal', time: '9:15 AM', location: 'Engineering Office', desc: 'Cross-examine dimensional tolerances on raw assembly variants.' },
@@ -445,17 +501,22 @@
             { id: 42, day: 21, title: 'Late Ice Free Skate', type: 'evt-game', time: '8:15 PM', location: 'Sub-Zero Annex Sheet', desc: 'Optional edge tuning drills and technical stride analysis blocks.' },
             { id: 43, day: 21, title: 'Data Backup Archive', type: 'evt-practice', time: '10:00 PM', location: 'Workstation Node', desc: 'Verify complete directory updates and cloud repository syncing structures.' },
             
-            { id: 23, day: 20, title: 'Mom coming', type: 'evt-banner', time: 'All Day', desc: 'Midweek exploration schedule' },
             { id: 24, day: 20, title: 'White vs. Blue', type: 'evt-practice', time: '6:00 PM', desc: 'Intra-squad club showcase scrimmage' },
             { id: 28, day: 22, title: 'Jane Vacation', type: 'evt-special', time: 'All Day', desc: 'Out of office calendar holiday holdout' },
-            { id: 29, day: 24, title: 'Mom coming', type: 'evt-banner', time: 'All Day', desc: 'Extended family timeline weekend log' },
-            { id: 30, day: 25, title: 'Mom coming', type: 'evt-banner', time: 'All Day', desc: 'Holiday collection route' },
             { id: 31, day: 25, title: 'Memorial Day', type: 'evt-special', time: 'All Day', desc: 'National Holiday - Office Closed' },
             { id: 32, day: 26, title: 'Game', type: 'evt-game', time: '6:00 PM', desc: 'Evening club series trial' },
             { id: 33, day: 27, title: 'Game', type: 'evt-game', time: '5:30 PM', desc: 'Midweek division match' },
-            { id: 34, day: 29, title: 'Games', type: 'evt-game', time: '4:00 PM', desc: 'Pre-weekend open schedule tournament sets' },
-            { id: 35, day: 31, title: 'Mom coming', type: 'evt-banner', time: 'All Day', desc: 'Closing calendar block calculation verification' }
+            { id: 34, day: 29, title: 'Games', type: 'evt-game', time: '4:00 PM', desc: 'Pre-weekend open schedule tournament sets' }
         ];
+
+        /* Helper function to check if an event falls on a specific day */
+        function isEventOnDay(e, dayNum) {
+            if (e.day === dayNum) return true;
+            if (e.startDay !== undefined && e.endDay !== undefined) {
+                return dayNum >= e.startDay && dayNum <= e.endDay;
+            }
+            return false;
+        }
 
         function cycleTextScale() {
             textScaleLevel = (textScaleLevel + 1) % scaleValues.length;
@@ -567,7 +628,7 @@
             displayContainer.innerHTML = ''; 
 
             if (currentMode === 'day') {
-                var dayEvents = hardcodedEvents.filter(function(e) { return e.day === selectedDay; });
+                var dayEvents = hardcodedEvents.filter(function(e) { return isEventOnDay(e, selectedDay); });
                 
                 var dayHTML = '<div class="scrollable-content" onclick="setDisplayMode(\'month\')">' +
                               '<div class="day-view-scroll-wrapper">' +
@@ -615,7 +676,7 @@
                         var loopDateObj = new Date(anchorYear, anchorMonth, loopDayNum);
                         var weekdayHeaderLabel = loopDateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
                         (function(dNum) {
-                            var singleDayEvents = hardcodedEvents.filter(function(e) { return e.day === dNum; });
+                            var singleDayEvents = hardcodedEvents.filter(function(e) { return isEventOnDay(e, dNum); });
                             weekHTML += '<div class="week-day-block" onclick="setDisplayMode(\'day\', ' + dNum + ')"><div class="week-day-title">' + weekdayHeaderLabel + '</div>';
                             
                             if (singleDayEvents.length === 0) {
@@ -644,27 +705,35 @@
                 displayContainer.innerHTML = weekHTML;
             } 
             else if (currentMode === 'month') {
+                var monthWrapper = document.createElement('div');
+                monthWrapper.className = 'month-view-container';
+
                 var gridHTML = '<div class="month-grid">' +
                         '<div class="day-header">S</div><div class="day-header">M</div><div class="day-header">T</div>' +
                         '<div class="day-header">W</div><div class="day-header">T</div><div class="day-header">F</div><div class="day-header">S</div>';
                 
-                for (var i = 0; i < 5; i++) {
+                // May 2026 starts on Friday, so 5 empty cells precede it
+                var emptyOffsetCells = 5;
+                for (var i = 0; i < emptyOffsetCells; i++) {
                     gridHTML += '<div class="grid-cell other-month"></div>';
                 }
                 
                 for (var d = 1; d <= 31; d++) {
+                    var isTodayStyle = (d === 19) ? 'today' : '';
                     var innerEventsHTML = '';
 
                     (function(dNum) {
-                        var isTodayStyle = (dNum === 19) ? 'today' : '';
-                        var matchedCellEvents = hardcodedEvents.filter(function(e) { return e.day === dNum; });
+                        // Only filter discrete point-in-time entries to render inside the cell directly
+                        var matchedCellEvents = hardcodedEvents.filter(function(e) { 
+                            return e.day === dNum && e.type !== 'evt-banner'; 
+                        });
+                        
                         matchedCellEvents.forEach(function(e) {
                             var dynamicClass = "micro-event";
                             var inlineStyles = "";
                             
                             if (e.type === 'evt-game') dynamicClass += " evt-game";
                             else if (e.type === 'evt-special') dynamicClass += " evt-special";
-                            else if (e.type === 'evt-banner') dynamicClass += " evt-banner";
                             else if (e.type === 'evt-practice') inlineStyles = "color:var(--text-muted);";
                             else if (e.type === 'evt-personal') inlineStyles = "color:#ffffff;";
                             else if (e.type === 'evt-medical-alt') inlineStyles = "color:var(--cal-yellow-text);";
@@ -674,17 +743,54 @@
                         
                         gridHTML += '<div class="grid-cell ' + isTodayStyle + '" onclick="setDisplayMode(\'day\', ' + dNum + ')">' +
                                 '<span class="cell-number">' + dNum + '</span>' +
-                                innerEventsHTML +
+                                '<div class="cell-events-bucket">' + innerEventsHTML + '</div>' +
                             '</div>';
                     })(d);
                 }
                 
+                // Trailing grid items padding out final layout row
                 for (var i = 0; i < 6; i++) {
                     gridHTML += '<div class="grid-cell other-month"></div>';
                 }
+                gridHTML += '</div>'; // End Grid
+
+                // Generate Continuous Overlay Track Layouts
+                var overlayHTML = '<div class="continuous-banner-overlay">' +
+                                  '<div style="grid-column: span 7; height: 0;"></div>'; /* Header spacing element matching day row */
                 
-                gridHTML += '</div>';
-                displayContainer.innerHTML = gridHTML;
+                var multiDayBanners = hardcodedEvents.filter(function(e) { return e.type === 'evt-banner'; });
+                
+                multiDayBanners.forEach(function(e) {
+                    var totalStartCellIndex = emptyOffsetCells + e.startDay; 
+                    var totalEndCellIndex = emptyOffsetCells + e.endDay; 
+                    
+                    var startingRow = Math.floor((totalStartCellIndex - 1) / 7) + 2; 
+                    var endingRow = Math.floor((totalEndCellIndex - 1) / 7) + 2; 
+
+                    for (var r = startingRow; r <= endingRow; r++) {
+                        var currentWeekRowStart = (r - 2) * 7 + 1;
+                        var currentWeekRowEnd = currentWeekRowStart + 6;
+                        
+                        var relativeStartColumn = Math.max(totalStartCellIndex, currentWeekRowStart);
+                        var relativeEndColumn = Math.min(totalEndCellIndex, currentWeekRowEnd);
+                        
+                        var gridColStart = ((relativeStartColumn - 1) % 7) + 1;
+                        var gridColEnd = ((relativeEndColumn - 1) % 7) + 2; 
+                        
+                        overlayHTML += '<div class="continuous-banner-item" style="' +
+                                       'grid-row-start: ' + r + '; ' +
+                                       'grid-column-start: ' + gridColStart + '; ' +
+                                       'grid-column-end: ' + gridColEnd + ';" ' +
+                                       'onclick="openEventDetail(' + e.id + ', event)">' +
+                                       e.title +
+                                       '</div>';
+                    }
+                });
+                
+                overlayHTML += '</div>'; // End Overlay Tracking Matrix Container
+                
+                monthWrapper.innerHTML = gridHTML + overlayHTML;
+                displayContainer.appendChild(monthWrapper);
             }
         }
 
